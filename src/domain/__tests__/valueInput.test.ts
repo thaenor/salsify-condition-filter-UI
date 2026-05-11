@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Property, Operator, ValueInputKind, CriteriaValue } from '../types';
+import type { Property, Operator } from '../types';
 import { valueInputKindFor, parseRawValue } from '../valueInput';
 
 describe('valueInputKindFor', () => {

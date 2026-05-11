@@ -1,4 +1,4 @@
-import type { Product, FilterDraft, FilterCriteria, CriteriaValue, OperatorId } from './types';
+import type { Product, FilterDraft, FilterCriteria } from './types';
 
 export function isReady(draft: FilterDraft): draft is Extract<FilterDraft, { stage: 'ready' }> {
   return draft.stage === 'ready';
