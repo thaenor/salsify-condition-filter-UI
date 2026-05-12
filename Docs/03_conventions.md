@@ -1,6 +1,6 @@
 # Conventions
 
-Cross-cutting rules. How errors move through the app, how things are named, and what we are explicitly *not* building.
+Cross-cutting rules. How errors move through the app, how things are named, and what we are explicitly _not_ building.
 
 ## Error handling
 
@@ -26,29 +26,36 @@ There are three kinds of failure, and they take three different paths:
 ## Naming
 
 **Files.**
+
 - View components: `PascalCase` (`FilterBar.js`, `ValueInput.js`).
 - Modules and controllers: `camelCase` (`filter.js`, `filterController.js`).
 - Tests: `*.test.js`, co-located in a `__tests__/` folder beside the module under test.
 - Type-only files: `types.js` or co-located with the implementing module.
 
 **Functions.**
+
 - Predicates return boolean, start with `is`, `has`, or `can` (`isReady`, `hasValueFor`, `canApply`).
 - Mutations and side-effects use verb-first imperative names (`applyFilter`, `parseRawValue`, `setOperator`).
 - Pure derivations read as nouns or short phrases (`validOperatorsFor`, `valueInputKindFor`, `filteredProducts`).
 
 **View events.**
+
 - Incoming props: `onSomething` (`onChange`, `onApply`).
 - Internal handlers: `handleSomething` (`handleChange`, `handleApply`).
+- Application-layer functions wired directly to UI events also use `handleSomething` (`handlePropertySelection`, `handleApply`). Use `handleSomething` when the function is the direct callback for a user interaction; use a plain verb-first name (`selectProperty`, `applyFilter`) when the function is a domain operation that may be called from multiple contexts.
 
 **Types and tagged unions.**
+
 - Type names: `PascalCase` (`Product`, `FilterCriteria`, `ValueInputKind`).
 - Discriminator field: always `kind` (not `type`, which collides with `Property.type`).
 
 **Constants.**
+
 - Typed objects (compatibility maps, operator catalogs): `PascalCase` (`Compatibility`, `Operators`).
 - Primitives and simple arrays: `SCREAMING_SNAKE_CASE` (`MAX_PRODUCTS`).
 
 **Wire vs internal field naming.**
+
 - External data uses whatever naming the source provides. The data layer maps to camelCase and to the domain's vocabulary before anything crosses into application or domain code. No other layer references external field names. This keeps domain knowledge consistent — if we call something a "property," the app never knows it as an "attribute," even if a backend source uses that term.
 
 **No abbreviations** unless universal. `id`, `url`, `db` are fine. `prop`, `op`, `el` are not — use `property`, `operator`, `element`.
@@ -68,10 +75,14 @@ shows awareness of scope, not intent to build.
   Six rows doesn't need it.
 - **CSS architecture** — No design tokens, theming, dark mode, or
   responsive breakpoints. Desktop-first.
-- **CI/CD and tooling** — Default bundler config, no pipeline, no
-  quality gates, no deploy target.
+- **CI/CD and tooling** — No pipeline, no deploy target.
 - **State persistence** — In-memory only. No URL encoding, no
   localStorage.
 - **Testing beyond unit tests** — No visual regression, no automated
   a11y, no performance regression. E2E deferred as stretch goal.
 - **Security, SEO, PWA, compliance** — None in scope.
+
+## Formatting
+
+- **Prettier is the canonical formatter.** Run `npm run format` to auto-fix all files. Never configure ESLint style rules — Prettier owns all formatting decisions (`eslint-config-prettier` disables any conflicts).
+- **Quality gate.** `npm run check` runs `tsc --noEmit`, `vitest run`, `eslint .`, and `prettier --check .` in sequence. All four must pass before every commit.

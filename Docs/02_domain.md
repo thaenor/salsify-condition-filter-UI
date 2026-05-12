@@ -8,8 +8,8 @@ The domain is the rules of the problem, expressed as data and pure functions. No
 
 ```ts
 interface Product {
-  id: number;
-  property_values: PropertyValue[];
+    id: number;
+    property_values: PropertyValue[];
 }
 ```
 
@@ -21,10 +21,10 @@ A product need not have a value for every property. The sample data demonstrates
 type PropertyType = 'string' | 'number' | 'enumerated';
 
 interface Property {
-  id: number;
-  name: string;
-  type: PropertyType;
-  values?: string[];     // present only when type === 'enumerated'
+    id: number;
+    name: string;
+    type: PropertyType;
+    values?: string[]; // present only when type === 'enumerated'
 }
 ```
 
@@ -34,41 +34,33 @@ The `values` field is the closed set of allowed values for enumerated properties
 
 ```ts
 interface PropertyValue {
-  propertyId: number;
-  value: string | number;
+    propertyId: number;
+    value: string | number;
 }
 ```
 
 Field names use the domain's camelCase convention. The data layer handles any mapping from external formats.
 
-
 ### Operator
 
 ```ts
-type OperatorId =
-  | 'equals'
-  | 'greater_than'
-  | 'less_than'
-  | 'any'
-  | 'none'
-  | 'in'
-  | 'contains';
+type OperatorId = 'equals' | 'greater_than' | 'less_than' | 'any' | 'none' | 'in' | 'contains';
 
 interface Operator {
-  id: OperatorId;
-  text: string;
+    id: OperatorId;
+    text: string;
 }
 ```
 
-| Operator | Reads | Semantics |
-|---|---|---|
-| `equals` | one value | product's value exactly equals candidate |
-| `greater_than` | one value | product's numeric value strictly greater than candidate |
-| `less_than` | one value | product's numeric value strictly less than candidate |
-| `any` | nothing | product has a value for the property |
-| `none` | nothing | product has no value for the property |
-| `in` | list of values | product's value equals any candidate in the list |
-| `contains` | one value | product's string value contains candidate as substring |
+| Operator       | Reads          | Semantics                                               |
+| -------------- | -------------- | ------------------------------------------------------- |
+| `equals`       | one value      | product's value exactly equals candidate                |
+| `greater_than` | one value      | product's numeric value strictly greater than candidate |
+| `less_than`    | one value      | product's numeric value strictly less than candidate    |
+| `any`          | nothing        | product has a value for the property                    |
+| `none`         | nothing        | product has no value for the property                   |
+| `in`           | list of values | product's value equals any candidate in the list        |
+| `contains`     | one value      | product's string value contains candidate as substring  |
 
 Equality and substring semantics (case sensitivity, whitespace) are decided in `assumptions.md`.
 
@@ -76,25 +68,25 @@ Equality and substring semantics (case sensitivity, whitespace) are decided in `
 
 ```ts
 const COMPATIBILITY: Record<PropertyType, OperatorId[]> = {
-  string:     ['equals', 'any', 'none', 'in', 'contains'],
-  number:     ['equals', 'greater_than', 'less_than', 'any', 'none', 'in'],
-  enumerated: ['equals', 'any', 'none', 'in']
+    string: ['equals', 'any', 'none', 'in', 'contains'],
+    number: ['equals', 'greater_than', 'less_than', 'any', 'none', 'in'],
+    enumerated: ['equals', 'any', 'none', 'in'],
 };
 ```
 
 ## ValueInputKind
 
-The domain tells the View *what kind of input* to render. The View dispatches on the kind — it never branches on property type or operator id.
+The domain tells the View _what kind of input_ to render. The View dispatches on the kind — it never branches on property type or operator id.
 
 ```ts
 type ValueInputKind =
-  | 'none'           // any, none
-  | 'text'           // string equals/contains
-  | 'number'         // number equals/greater_than/less_than
-  | 'multi-text'     // string in
-  | 'multi-number'   // number in
-  | 'enum-single'    // enumerated equals
-  | 'enum-multi';    // enumerated in
+    | 'none' // any, none
+    | 'text' // string equals/contains
+    | 'number' // number equals/greater_than/less_than
+    | 'multi-text' // string in
+    | 'multi-number' // number in
+    | 'enum-single' // enumerated equals
+    | 'enum-multi'; // enumerated in
 ```
 
 Examples:
@@ -111,13 +103,13 @@ The parsed, ready-to-apply value. Discriminated by the same `kind` as `ValueInpu
 
 ```ts
 type CriteriaValue =
-  | { kind: 'none' }
-  | { kind: 'text';        value: string }
-  | { kind: 'number';      value: number }
-  | { kind: 'multi-text';  values: string[] }
-  | { kind: 'multi-number'; values: number[] }
-  | { kind: 'enum-single'; value: string }
-  | { kind: 'enum-multi';  values: string[] };
+    | { kind: 'none' }
+    | { kind: 'text'; value: string }
+    | { kind: 'number'; value: number }
+    | { kind: 'multi-text'; values: string[] }
+    | { kind: 'multi-number'; values: number[] }
+    | { kind: 'enum-single'; value: string }
+    | { kind: 'enum-multi'; values: string[] };
 ```
 
 `ValueInputKind` and `CriteriaValue` share the same `kind` tags by design — a common vocabulary so the View, controller, and domain agree on what shape of data is in play. But they serve different roles and are kept separate because they sit at different stages of the pipeline:
@@ -133,8 +125,8 @@ Tagged union consistent with the rest of the domain. A future compound-filter va
 
 ```ts
 type FilterCriteria =
-  | { kind: 'none' }
-  | { kind: 'single'; propertyId: number; operatorId: OperatorId; value: CriteriaValue };
+    | { kind: 'none' }
+    | { kind: 'single'; propertyId: number; operatorId: OperatorId; value: CriteriaValue };
 ```
 
 ## FilterDraft
@@ -143,10 +135,10 @@ The in-progress filter. Modeled as a discriminated union — impossible states c
 
 ```ts
 type FilterDraft =
-  | { stage: 'needs-property' }
-  | { stage: 'needs-operator'; propertyId: number }
-  | { stage: 'needs-value';    propertyId: number; operatorId: OperatorId }
-  | { stage: 'ready';          propertyId: number; operatorId: OperatorId; value: CriteriaValue };
+    | { stage: 'needs-property' }
+    | { stage: 'needs-operator'; propertyId: number }
+    | { stage: 'needs-value'; propertyId: number; operatorId: OperatorId }
+    | { stage: 'ready'; propertyId: number; operatorId: OperatorId; value: CriteriaValue };
 ```
 
 Each `stage` names what the draft is waiting on next, so the View can dispatch on it directly. Only a `'ready'` draft can be applied. Operators that take no value (`any`, `none`) reach `'ready'` as soon as the operator is selected, with `value: { kind: 'none' }`.
@@ -156,9 +148,7 @@ Each `stage` names what the draft is waiting on next, so the View can dispatch o
 Raw user input parsing can fail. The domain returns a tagged result — this is ordinary state, not an exception.
 
 ```ts
-type ParseResult<T> =
-  | { ok: true;  value: T }
-  | { ok: false; error: string };
+type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string };
 ```
 
 ## Public API

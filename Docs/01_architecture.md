@@ -17,6 +17,7 @@ The system is organized in four layers with unidirectional dependencies: UI impo
 **Domain.** Pure functions with no I/O or framework dependencies. Implements the operator catalog, compatibility matrix, filter engine, and value-input-kind dispatch. All functions are total functions (valid inputs always produce defined outputs).
 
 Public API:
+
 - `applyFilter(products, criteria)` → `Product[]`
 - `validOperatorsFor(property)` → `Operator[]`
 - `valueInputKindFor(property, op)` → `ValueInputKind`
@@ -25,7 +26,6 @@ Public API:
 - `toCriteria(draft)` → `FilterCriteria`
 
 **Data**. The bridge between external sources and the application's internal vocabulary. Today it holds a single static datastore; the architecture accommodates additional sources without domain changes. Each source may ship its own naming conventions (snake_case from a Python API, PascalCase from a Ruby service, attributes instead of properties). The data layer maps all of these into the domain's types and terminology. No other layer references external field names or knows that a translation occurred.
-
 
 **Application.** Holds the in-progress filter draft as primary state. Exposes mutation operations: set property, set operator, set value, apply, clear. Computes available operators, value input kind, and filtered products from the draft state. Does not duplicate stored state.
 
@@ -104,5 +104,5 @@ src/
 
 ## Dependencies and frameworks
 
-* Shadcn + Tailwind is "replace" our design system. I will assume design related defaults.
-*
+- Shadcn + Tailwind is "replace" our design system. I will assume design related defaults.
+-
