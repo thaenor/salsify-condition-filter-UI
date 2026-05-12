@@ -1,9 +1,29 @@
 # Tests
 
-The goal is to follow a TDD approach. After analyzing the problem statement and business logic and rules, we can define the criteria each concept needs to follow.
+TDD throughout. Tests were written before implementation for every layer.
 
-Ideally we aim to have the following:
+## Structure
 
-- large coverage of unit tests (these cover the business rules, UI - application integration, edge case validation)
-- a mix of unit and integration tests: these would make sense to ensure the contract with outside servers/applications stays consistent and data is coming and going correctly. These are not actually implemented in this project since we only mock what would, in a real case scenario, be our backend.
-- E2E tests. Covering the finer details of UI and big scope testing. These should ensure the "happy path" of the user flow works flawlessly. Could also be used with external tools for screenshot validation and ensure the design system is correctly implemented (and a new commit doesn't accidentally add extra padding to the table or breaks the mobile layout).
+Tests live next to what they cover:
+
+- `src/domain/__tests__/` — business rules (filter logic, operator compatibility, value parsing)
+- `src/application/__tests__/` — state machine (reducer transitions, draft lifecycle)
+- `src/components/__tests__/` — UI components (rendering, user interaction, commit behavior)
+
+## Domain tests
+
+The bulk of the coverage. These exercise `applyFilter`, `valueInputKindFor`, `parseRawValue`, and the compatibility map. Covers all operator types across string, number, and enumerated properties — including edge cases like missing property values, single-element `in` lists, and case sensitivity.
+
+## Application tests
+
+The `filterReducer` is tested as a pure function. Each action type (`selectProperty`, `selectOperator`, `setValue`, `clear`) has cases for valid transitions, no-ops, and resets.
+
+## Component tests
+
+Each input component is tested in isolation with `@testing-library/react`. The jsdom environment is scoped per-file (not global) to keep domain tests lightweight. Tests verify rendering, local state tracking, and the commit-on-blur/Enter pattern used by text and number inputs.
+
+## What's not covered (yet)
+
+No E2E tests at the moment. Planning to add them next to cover the full user flow — selecting a property, choosing an operator, entering a value, and verifying the filtered results. Will also use them to catch a few edge cases that are hard to unit test in isolation.
+
+The infrastructure layer (datastore) is untested by design — it's a static mock with no logic worth testing.

@@ -1,5 +1,9 @@
 import type { Property, Operator, ValueInputKind, CriteriaValue, ParseResult } from './types';
 
+// This map could be derived programmatically from COMPATIBILITY (which operators are valid
+// per property type) combined with a per-operator shape rule (single vs multi vs none).
+// We chose an explicit static map because it's self-documenting and the operators/types
+// are not expected to change. Only valid property-type + operator combos are listed.
 const VALUE_INPUT_MAP: Record<string, Record<string, ValueInputKind>> = {
     string: {
         equals: 'text',
@@ -10,7 +14,6 @@ const VALUE_INPUT_MAP: Record<string, Record<string, ValueInputKind>> = {
     },
     number: {
         equals: 'number',
-        contains: 'number',
         greater_than: 'number',
         less_than: 'number',
         any: 'none',
@@ -19,9 +22,6 @@ const VALUE_INPUT_MAP: Record<string, Record<string, ValueInputKind>> = {
     },
     enumerated: {
         equals: 'enum-single',
-        contains: 'enum-single',
-        greater_than: 'enum-single',
-        less_than: 'enum-single',
         any: 'none',
         none: 'none',
         in: 'enum-multi',

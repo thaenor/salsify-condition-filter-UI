@@ -23,6 +23,8 @@ export default function App() {
                     inputKind={controller.inputKind}
                     onCommitValue={controller.setValue}
                     enumOptions={controller.selectedProperty?.values ?? []}
+                    onClear={controller.clear}
+                    showClear={controller.draft.stage !== 'needs-property'}
                 />
                 <ProductTable
                     properties={controller.properties}

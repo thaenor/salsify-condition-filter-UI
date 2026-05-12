@@ -80,6 +80,13 @@ describe('applyFilter', () => {
         { id: 5, propertyValues: [{ propertyId: 2, value: 25 }] },
     ];
 
+    const enumProducts: Product[] = [
+        { id: 1, propertyValues: [{ propertyId: 3, value: 'electronics' }] },
+        { id: 2, propertyValues: [{ propertyId: 3, value: 'tools' }] },
+        { id: 3, propertyValues: [{ propertyId: 3, value: 'kitchenware' }] },
+        { id: 4, propertyValues: [] }, // no category
+    ];
+
     describe('equals operator', () => {
         it('matches exact string (case-insensitive)', () => {
             const criteria: FilterCriteria = {
@@ -278,6 +285,104 @@ describe('applyFilter', () => {
             };
             const result = applyFilter(priceProducts, criteria);
             expect(result).toEqual([priceProducts[0], priceProducts[2]]);
+        });
+    });
+
+    describe('equals operator — enumerated', () => {
+        it('matches exact enum value', () => {
+            const criteria: FilterCriteria = {
+                kind: 'single',
+                propertyId: 3,
+                operatorId: 'equals',
+                value: { kind: 'enum-single', value: 'electronics' },
+            };
+            const result = applyFilter(enumProducts, criteria);
+            expect(result).toEqual([enumProducts[0]]);
+        });
+
+        it('does not match products missing the property', () => {
+            const criteria: FilterCriteria = {
+                kind: 'single',
+                propertyId: 3,
+                operatorId: 'equals',
+                value: { kind: 'enum-single', value: 'electronics' },
+            };
+            const result = applyFilter(enumProducts, criteria);
+            expect(result).not.toContainEqual(enumProducts[3]);
+        });
+    });
+
+    describe('in operator — enumerated', () => {
+        it('matches products whose value is in the enum list', () => {
+            const criteria: FilterCriteria = {
+                kind: 'single',
+                propertyId: 3,
+                operatorId: 'in',
+                value: { kind: 'enum-multi', values: ['electronics', 'tools'] },
+            };
+            const result = applyFilter(enumProducts, criteria);
+            expect(result).toEqual([enumProducts[0], enumProducts[1]]);
+        });
+    });
+
+    describe('any/none operators — missing property values', () => {
+        it('any returns only products that have the property', () => {
+            const criteria: FilterCriteria = {
+                kind: 'single',
+                propertyId: 3,
+                operatorId: 'any',
+                value: { kind: 'none' },
+            };
+            const result = applyFilter(enumProducts, criteria);
+            expect(result).toEqual([enumProducts[0], enumProducts[1], enumProducts[2]]);
+        });
+
+        it('none returns only products missing the property', () => {
+            const criteria: FilterCriteria = {
+                kind: 'single',
+                propertyId: 3,
+                operatorId: 'none',
+                value: { kind: 'none' },
+            };
+            const result = applyFilter(enumProducts, criteria);
+            expect(result).toEqual([enumProducts[3]]);
+        });
+    });
+
+    describe('in operator — single element list', () => {
+        it('single string value behaves like equals', () => {
+            const criteria: FilterCriteria = {
+                kind: 'single',
+                propertyId: 1,
+                operatorId: 'in',
+                value: { kind: 'multi-text', values: ['Headphones'] },
+            };
+            const result = applyFilter(products, criteria);
+            expect(result).toEqual([products[0], products[2]]);
+        });
+
+        it('single number value behaves like equals', () => {
+            const criteria: FilterCriteria = {
+                kind: 'single',
+                propertyId: 2,
+                operatorId: 'in',
+                value: { kind: 'multi-number', values: [20] },
+            };
+            const result = applyFilter(priceProducts, criteria);
+            expect(result).toEqual([priceProducts[1]]);
+        });
+    });
+
+    describe('contains operator — full match', () => {
+        it('matches when search string equals full value', () => {
+            const criteria: FilterCriteria = {
+                kind: 'single',
+                propertyId: 1,
+                operatorId: 'contains',
+                value: { kind: 'text', value: 'Headphones' },
+            };
+            const result = applyFilter(products, criteria);
+            expect(result).toContainEqual(products[0]);
         });
     });
 
