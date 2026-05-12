@@ -1,225 +1,926 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>useFilterController — Visual Guide</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; padding: 2rem; }
-  h1 { font-size: 1.4rem; margin-bottom: 0.25rem; color: #f8fafc; }
-  .subtitle { color: #94a3b8; font-size: 0.85rem; margin-bottom: 2rem; }
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>useFilterController — Deep Dive</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family:
+                    system-ui,
+                    -apple-system,
+                    sans-serif;
+                background: #0f172a;
+                color: #e2e8f0;
+                padding: 2rem;
+                max-width: 1100px;
+                margin: 0 auto;
+            }
+            h1 {
+                font-size: 1.5rem;
+                margin-bottom: 0.25rem;
+                color: #f8fafc;
+            }
+            .subtitle {
+                color: #94a3b8;
+                font-size: 0.85rem;
+                margin-bottom: 2.5rem;
+            }
+            .section-title {
+                font-size: 1.1rem;
+                color: #f8fafc;
+                margin: 2.5rem 0 1rem;
+                padding-bottom: 0.5rem;
+                border-bottom: 1px solid #334155;
+            }
+            .section-title span {
+                color: #94a3b8;
+                font-weight: 400;
+                font-size: 0.85rem;
+                margin-left: 0.5rem;
+            }
 
-  /* ── State machine ── */
-  .machine { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 2.5rem; flex-wrap: wrap; }
-  .state {
-    border: 2px solid #334155; border-radius: 12px; padding: 1rem 1.25rem;
-    min-width: 160px; position: relative; cursor: pointer; transition: all 0.2s;
-  }
-  .state:hover, .state.active { border-color: #38bdf8; background: #1e293b; }
-  .state-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem; }
-  .state-desc { font-size: 0.75rem; color: #94a3b8; }
-  .state-tag {
-    position: absolute; top: -8px; right: 10px; font-size: 0.6rem; font-weight: 600;
-    padding: 1px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.05em;
-  }
-  .tag-start { background: #1e40af; color: #93c5fd; }
-  .tag-ready { background: #166534; color: #86efac; }
+            /* ── State machine ── */
+            .machine {
+                display: flex;
+                gap: 1rem;
+                align-items: flex-start;
+                margin-bottom: 2.5rem;
+                flex-wrap: wrap;
+            }
+            .state {
+                border: 2px solid #334155;
+                border-radius: 12px;
+                padding: 1rem 1.25rem;
+                min-width: 160px;
+                position: relative;
+                transition: all 0.2s;
+            }
+            .state:hover {
+                border-color: #38bdf8;
+                background: #1e293b;
+            }
+            .state-name {
+                font-weight: 700;
+                font-size: 0.95rem;
+                margin-bottom: 0.25rem;
+            }
+            .state-desc {
+                font-size: 0.75rem;
+                color: #94a3b8;
+            }
+            .state-tag {
+                position: absolute;
+                top: -8px;
+                right: 10px;
+                font-size: 0.6rem;
+                font-weight: 600;
+                padding: 1px 8px;
+                border-radius: 6px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            .tag-start {
+                background: #1e40af;
+                color: #93c5fd;
+            }
+            .tag-ready {
+                background: #166534;
+                color: #86efac;
+            }
+            .arrow {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-width: 80px;
+                padding-top: 0.5rem;
+            }
+            .arrow-line {
+                color: #38bdf8;
+                font-size: 1.4rem;
+            }
+            .arrow-label {
+                font-size: 0.65rem;
+                color: #67e8f9;
+                font-weight: 600;
+                text-align: center;
+            }
+            .arrow-note {
+                font-size: 0.6rem;
+                color: #64748b;
+                text-align: center;
+                margin-top: 2px;
+            }
 
-  .arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 80px; padding-top: 0.5rem; }
-  .arrow-line { color: #38bdf8; font-size: 1.4rem; }
-  .arrow-label { font-size: 0.65rem; color: #67e8f9; font-weight: 600; text-align: center; }
-  .arrow-note { font-size: 0.6rem; color: #64748b; text-align: center; margin-top: 2px; }
+            /* ── Method cards ── */
+            .method-card {
+                background: #1e293b;
+                border-radius: 12px;
+                padding: 1.5rem;
+                margin-bottom: 1.25rem;
+                border-left: 3px solid #334155;
+            }
+            .method-card.action {
+                border-left-color: #38bdf8;
+            }
+            .method-card.derived {
+                border-left-color: #a78bfa;
+            }
+            .method-header {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                margin-bottom: 0.75rem;
+            }
+            .method-name {
+                font-family: monospace;
+                font-size: 1rem;
+                font-weight: 700;
+                color: #67e8f9;
+            }
+            .method-badge {
+                font-size: 0.6rem;
+                font-weight: 600;
+                padding: 2px 8px;
+                border-radius: 6px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            .badge-action {
+                background: #164e63;
+                color: #67e8f9;
+            }
+            .badge-derived {
+                background: #2e1065;
+                color: #c4b5fd;
+            }
+            .method-purpose {
+                font-size: 0.85rem;
+                color: #cbd5e1;
+                margin-bottom: 1rem;
+            }
+            .method-sig {
+                font-family: monospace;
+                font-size: 0.75rem;
+                color: #94a3b8;
+                background: #0f172a;
+                padding: 0.5rem 0.75rem;
+                border-radius: 8px;
+                margin-bottom: 1rem;
+            }
 
-  /* ── Two-column layout ── */
-  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
-  @media (max-width: 800px) { .columns { grid-template-columns: 1fr; } }
+            /* ── Scenario blocks ── */
+            .scenario {
+                margin-bottom: 0.75rem;
+            }
+            .scenario-label {
+                font-size: 0.7rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 0.35rem;
+            }
+            .scenario-label.example {
+                color: #4ade80;
+            }
+            .scenario-label.edge {
+                color: #fbbf24;
+            }
+            .scenario-label.error {
+                color: #f87171;
+            }
+            .scenario-content {
+                font-size: 0.8rem;
+                background: #0f172a;
+                border-radius: 8px;
+                padding: 0.6rem 0.75rem;
+                border: 1px solid #1e293b;
+            }
+            .scenario-content code {
+                color: #67e8f9;
+                font-size: 0.75rem;
+            }
+            .before-after {
+                display: grid;
+                grid-template-columns: 1fr auto 1fr;
+                gap: 0.5rem;
+                align-items: start;
+                font-size: 0.75rem;
+            }
+            .ba-label {
+                font-size: 0.6rem;
+                color: #64748b;
+                text-transform: uppercase;
+                font-weight: 600;
+                margin-bottom: 0.25rem;
+            }
+            .ba-arrow {
+                color: #38bdf8;
+                font-size: 1.2rem;
+                padding-top: 1rem;
+            }
+            .ba-box {
+                background: #0f172a;
+                border: 1px solid #334155;
+                border-radius: 8px;
+                padding: 0.5rem 0.75rem;
+                font-family: monospace;
+                font-size: 0.7rem;
+                color: #94a3b8;
+            }
+            .ba-box .hi {
+                color: #4ade80;
+            }
+            .ba-box .err {
+                color: #f87171;
+            }
 
-  .panel { background: #1e293b; border-radius: 12px; padding: 1.25rem; }
-  .panel h2 { font-size: 0.95rem; color: #f8fafc; margin-bottom: 0.75rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+            /* ── Reset cascade ── */
+            .reset-box {
+                background: #1e293b;
+                border-radius: 12px;
+                padding: 1.25rem;
+                border-left: 3px solid #f59e0b;
+                margin-bottom: 1.25rem;
+            }
+            .reset-box h2 {
+                font-size: 0.95rem;
+                color: #fbbf24;
+                margin-bottom: 0.75rem;
+            }
+            .reset-rule {
+                font-size: 0.8rem;
+                margin-bottom: 0.4rem;
+                padding-left: 0.75rem;
+                border-left: 2px solid #334155;
+            }
+            .reset-rule strong {
+                color: #fbbf24;
+            }
 
-  /* ── Derived state ── */
-  .derived { display: flex; flex-direction: column; gap: 0.5rem; }
-  .derived-item { display: flex; align-items: flex-start; gap: 0.5rem; }
-  .derived-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
-  .dot-blue { background: #38bdf8; }
-  .dot-green { background: #4ade80; }
-  .dot-amber { background: #fbbf24; }
-  .dot-purple { background: #a78bfa; }
-  .derived-text { font-size: 0.8rem; }
-  .derived-code { color: #67e8f9; font-family: monospace; font-size: 0.75rem; }
+            /* ── Pipeline ── */
+            .pipeline {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+                padding: 1.25rem;
+                background: #1e293b;
+                border-radius: 12px;
+            }
+            .pipe-step {
+                background: #0f172a;
+                border: 1px solid #334155;
+                border-radius: 8px;
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+                text-align: center;
+            }
+            .pipe-step .fn {
+                color: #67e8f9;
+                font-family: monospace;
+                font-weight: 600;
+            }
+            .pipe-step .type {
+                color: #94a3b8;
+                font-size: 0.65rem;
+                margin-top: 2px;
+            }
+            .pipe-arrow {
+                color: #475569;
+                font-size: 1.2rem;
+            }
+            .pipe-label {
+                width: 100%;
+                font-size: 0.75rem;
+                color: #64748b;
+                margin-bottom: 0.5rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
 
-  /* ── Actions table ── */
-  .actions-table { width: 100%; font-size: 0.8rem; }
-  .actions-table td { padding: 0.4rem 0; vertical-align: top; }
-  .actions-table td:first-child { font-family: monospace; color: #67e8f9; white-space: nowrap; padding-right: 1rem; font-size: 0.75rem; }
-  .actions-table tr + tr td { border-top: 1px solid #1e293b; }
+            .tip {
+                background: #1a2332;
+                border: 1px solid #1e3a5f;
+                border-radius: 8px;
+                padding: 0.75rem 1rem;
+                margin: 1rem 0;
+                font-size: 0.78rem;
+                color: #93c5fd;
+            }
+            .tip strong {
+                color: #60a5fa;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>useFilterController &mdash; Deep Dive</h1>
+        <p class="subtitle">
+            Everything the controller does, method by method, with real examples from the Salsify
+            datastore.
+        </p>
 
-  /* ── Reset rules ── */
-  .reset-box { background: #1e293b; border-radius: 12px; padding: 1.25rem; border-left: 3px solid #f59e0b; }
-  .reset-box h2 { font-size: 0.95rem; color: #fbbf24; margin-bottom: 0.75rem; }
-  .reset-rule { font-size: 0.8rem; margin-bottom: 0.4rem; padding-left: 0.75rem; border-left: 2px solid #334155; }
-  .reset-rule strong { color: #fbbf24; }
+        <!-- ════════════════════════════════════════ -->
+        <div class="section-title">The State Machine <span>4 states, 4 transitions</span></div>
 
-  /* ── Pipeline ── */
-  .pipeline { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 2rem; padding: 1.25rem; background: #1e293b; border-radius: 12px; }
-  .pipe-step {
-    background: #0f172a; border: 1px solid #334155; border-radius: 8px;
-    padding: 0.5rem 0.75rem; font-size: 0.75rem; text-align: center;
-  }
-  .pipe-step .fn { color: #67e8f9; font-family: monospace; font-weight: 600; }
-  .pipe-step .type { color: #94a3b8; font-size: 0.65rem; margin-top: 2px; }
-  .pipe-arrow { color: #475569; font-size: 1.2rem; }
-  .pipe-label { width: 100%; font-size: 0.75rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-</style>
-</head>
-<body>
-
-<h1>useFilterController</h1>
-<p class="subtitle">The controller is a state machine + derived computations. That's it.</p>
-
-<!-- ── STATE MACHINE ── -->
-<div class="machine">
-  <div class="state" id="s1">
-    <span class="state-tag tag-start">start</span>
-    <div class="state-name">needs-property</div>
-    <div class="state-desc">Nothing selected yet</div>
-  </div>
-  <div class="arrow">
-    <div class="arrow-label">selectProperty</div>
-    <div class="arrow-line">&rarr;</div>
-    <div class="arrow-note">resets all</div>
-  </div>
-  <div class="state" id="s2">
-    <div class="state-name">needs-operator</div>
-    <div class="state-desc">Property chosen, pick operator</div>
-  </div>
-  <div class="arrow">
-    <div class="arrow-label">selectOperator</div>
-    <div class="arrow-line">&rarr;</div>
-    <div class="arrow-note">any/none skip value</div>
-  </div>
-  <div class="state" id="s3">
-    <div class="state-name">needs-value</div>
-    <div class="state-desc">Type a value or pick from enum</div>
-  </div>
-  <div class="arrow">
-    <div class="arrow-label">setValue</div>
-    <div class="arrow-line">&rarr;</div>
-    <div class="arrow-note">parse succeeds</div>
-  </div>
-  <div class="state" id="s4">
-    <span class="state-tag tag-ready">ready</span>
-    <div class="state-name">ready</div>
-    <div class="state-desc">Filter applied, table updates</div>
-  </div>
-</div>
-
-<div class="columns">
-  <!-- ── DERIVED STATE ── -->
-  <div class="panel">
-    <h2>Derived from draft (computed, not stored)</h2>
-    <div class="derived">
-      <div class="derived-item">
-        <div class="derived-dot dot-blue"></div>
-        <div>
-          <div class="derived-text"><strong>validOperators</strong></div>
-          <div class="derived-code">COMPATIBILITY[property.type] &rarr; Operator[]</div>
+        <div class="machine">
+            <div class="state">
+                <span class="state-tag tag-start">start</span>
+                <div class="state-name">needs-property</div>
+                <div class="state-desc">Nothing selected yet.<br />All products visible.</div>
+            </div>
+            <div class="arrow">
+                <div class="arrow-label">selectProperty</div>
+                <div class="arrow-line">&rarr;</div>
+            </div>
+            <div class="state">
+                <div class="state-name">needs-operator</div>
+                <div class="state-desc">Property chosen.<br />Operator dropdown appears.</div>
+            </div>
+            <div class="arrow">
+                <div class="arrow-label">selectOperator</div>
+                <div class="arrow-line">&rarr;</div>
+                <div class="arrow-note">any/none skip to ready</div>
+            </div>
+            <div class="state">
+                <div class="state-name">needs-value</div>
+                <div class="state-desc">Type a value, pick from<br />enum, or enter a list.</div>
+            </div>
+            <div class="arrow">
+                <div class="arrow-label">setValue</div>
+                <div class="arrow-line">&rarr;</div>
+                <div class="arrow-note">parse must succeed</div>
+            </div>
+            <div class="state">
+                <span class="state-tag tag-ready">ready</span>
+                <div class="state-name">ready</div>
+                <div class="state-desc">Filter is live.<br />Table shows filtered rows.</div>
+            </div>
         </div>
-      </div>
-      <div class="derived-item">
-        <div class="derived-dot dot-green"></div>
-        <div>
-          <div class="derived-text"><strong>inputKind</strong></div>
-          <div class="derived-code">valueInputKindFor(property, operator) &rarr; ValueInputKind</div>
+
+        <div class="tip">
+            <strong>Key insight:</strong> The draft is never in an impossible state. You can't have
+            an operator without a property, or a value without an operator. The
+            <code>stage</code> field enforces this at the type level.
         </div>
-      </div>
-      <div class="derived-item">
-        <div class="derived-dot dot-amber"></div>
-        <div>
-          <div class="derived-text"><strong>filteredProducts</strong></div>
-          <div class="derived-code">isReady? applyFilter(products, toCriteria(draft)) : allProducts</div>
+
+        <!-- ════════════════════════════════════════ -->
+        <div class="section-title">Actions <span>functions that change state</span></div>
+
+        <!-- ── selectProperty ── -->
+        <div class="method-card action">
+            <div class="method-header">
+                <div class="method-name">selectProperty(propertyId)</div>
+                <span class="method-badge badge-action">action</span>
+            </div>
+            <div class="method-purpose">
+                User picks a property from the dropdown. Resets <em>everything</em> below it &mdash;
+                operator, value, and any parse error are wiped.
+            </div>
+            <div class="method-sig">dispatch({ type: 'selectProperty', propertyId: number })</div>
+
+            <div class="scenario">
+                <div class="scenario-label example">Example: user picks "Product Name"</div>
+                <div class="before-after">
+                    <div>
+                        <div class="ba-label">Before</div>
+                        <div class="ba-box">{ stage: 'needs-property' }</div>
+                    </div>
+                    <div class="ba-arrow">&rarr;</div>
+                    <div>
+                        <div class="ba-label">After</div>
+                        <div class="ba-box">
+                            { stage: '<span class="hi">needs-operator</span
+                            >',<br />&nbsp;&nbsp;propertyId: <span class="hi">0</span> }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scenario">
+                <div class="scenario-label edge">
+                    Edge: user switches property mid-flow (had "Price &gt; 20" ready)
+                </div>
+                <div class="before-after">
+                    <div>
+                        <div class="ba-label">Before</div>
+                        <div class="ba-box">
+                            { stage: 'ready',<br />&nbsp;&nbsp;propertyId: 2,<br />&nbsp;&nbsp;operatorId:
+                            'greater_than',<br />&nbsp;&nbsp;value: { kind: 'number', value: 20 } }
+                        </div>
+                    </div>
+                    <div class="ba-arrow">&rarr;</div>
+                    <div>
+                        <div class="ba-label">After</div>
+                        <div class="ba-box">
+                            { stage: '<span class="hi">needs-operator</span
+                            >',<br />&nbsp;&nbsp;propertyId:
+                            <span class="hi">3</span> }<br /><br /><span style="color: #64748b"
+                                >// operator &amp; value wiped.</span
+                            ><br /><span style="color: #64748b">// "greater_than" isn't valid</span
+                            ><br /><span style="color: #64748b">// for category (enumerated)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="derived-item">
-        <div class="derived-dot dot-purple"></div>
-        <div>
-          <div class="derived-text"><strong>parseError</strong></div>
-          <div class="derived-code">setValue failed? error string : null</div>
+
+        <!-- ── selectOperator ── -->
+        <div class="method-card action">
+            <div class="method-header">
+                <div class="method-name">selectOperator(operatorId)</div>
+                <span class="method-badge badge-action">action</span>
+            </div>
+            <div class="method-purpose">
+                User picks an operator. Resets value and parse error. Special case:
+                <code>any</code> and <code>none</code> need no value, so they jump straight to
+                <strong>ready</strong>.
+            </div>
+            <div class="method-sig">
+                dispatch({ type: 'selectOperator', operatorId: OperatorId })
+            </div>
+
+            <div class="scenario">
+                <div class="scenario-label example">
+                    Example: user picks "Equals" for a string property
+                </div>
+                <div class="before-after">
+                    <div>
+                        <div class="ba-label">Before</div>
+                        <div class="ba-box">
+                            { stage: 'needs-operator',<br />&nbsp;&nbsp;propertyId: 0 }
+                        </div>
+                    </div>
+                    <div class="ba-arrow">&rarr;</div>
+                    <div>
+                        <div class="ba-label">After</div>
+                        <div class="ba-box">
+                            { stage: '<span class="hi">needs-value</span
+                            >',<br />&nbsp;&nbsp;propertyId: 0,<br />&nbsp;&nbsp;operatorId: '<span
+                                class="hi"
+                                >equals</span
+                            >' }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scenario">
+                <div class="scenario-label example">
+                    Example: user picks "Has any value" (skips value entirely)
+                </div>
+                <div class="before-after">
+                    <div>
+                        <div class="ba-label">Before</div>
+                        <div class="ba-box">
+                            { stage: 'needs-operator',<br />&nbsp;&nbsp;propertyId: 4 }
+                        </div>
+                    </div>
+                    <div class="ba-arrow">&rarr;</div>
+                    <div>
+                        <div class="ba-label">After</div>
+                        <div class="ba-box">
+                            { stage: '<span class="hi">ready</span>',<br />&nbsp;&nbsp;propertyId:
+                            4,<br />&nbsp;&nbsp;operatorId: '<span class="hi">any</span
+                            >',<br />&nbsp;&nbsp;value: { kind: '<span class="hi">none</span>' }
+                            }<br /><br /><span style="color: #64748b"
+                                >// Filter is live immediately!</span
+                            ><br /><span style="color: #64748b"
+                                >// Shows products 0,1,2 (have wireless)</span
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scenario">
+                <div class="scenario-label edge">
+                    Edge: user switches operator (had "Equals", now picks "Contains")
+                </div>
+                <div class="before-after">
+                    <div>
+                        <div class="ba-label">Before</div>
+                        <div class="ba-box">
+                            { stage: 'ready',<br />&nbsp;&nbsp;propertyId: 0,<br />&nbsp;&nbsp;operatorId:
+                            'equals',<br />&nbsp;&nbsp;value: { kind: 'text', value: 'Headphones' }
+                            }
+                        </div>
+                    </div>
+                    <div class="ba-arrow">&rarr;</div>
+                    <div>
+                        <div class="ba-label">After</div>
+                        <div class="ba-box">
+                            { stage: '<span class="hi">needs-value</span
+                            >',<br />&nbsp;&nbsp;propertyId: 0,<br />&nbsp;&nbsp;operatorId: '<span
+                                class="hi"
+                                >contains</span
+                            >' }<br /><br /><span style="color: #64748b"
+                                >// value wiped &mdash; user must re-enter</span
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scenario">
+                <div class="scenario-label error">Guard: called before property is set</div>
+                <div class="scenario-content">
+                    If <code>draft.stage === 'needs-property'</code>, the reducer returns the same
+                    state. Nothing happens. This can't occur in the UI because the operator dropdown
+                    isn't rendered yet.
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ── ACTIONS ── -->
-  <div class="panel">
-    <h2>4 actions (dispatched to filterReducer)</h2>
-    <table class="actions-table">
-      <tr>
-        <td>selectProperty(id)</td>
-        <td>&rarr; needs-operator, clears operator + value + error</td>
-      </tr>
-      <tr>
-        <td>selectOperator(id)</td>
-        <td>&rarr; needs-value (or &rarr; ready if any/none), clears value + error</td>
-      </tr>
-      <tr>
-        <td>setValue(raw)</td>
-        <td>&rarr; ready if parse OK, stays needs-value + sets parseError if not</td>
-      </tr>
-      <tr>
-        <td>clear()</td>
-        <td>&rarr; needs-property, everything resets</td>
-      </tr>
-    </table>
-  </div>
-</div>
+        <!-- ── setValue ── -->
+        <div class="method-card action">
+            <div class="method-header">
+                <div class="method-name">setValue(raw)</div>
+                <span class="method-badge badge-action">action</span>
+            </div>
+            <div class="method-purpose">
+                User types or selects a value. The reducer calls <code>parseRawValue()</code> to
+                validate. If parsing succeeds &rarr; <strong>ready</strong>. If it fails &rarr;
+                stays <strong>needs-value</strong> and sets <code>parseError</code>.
+            </div>
+            <div class="method-sig">
+                dispatch({ type: 'setValue', raw: string, property: Property, operator: Operator })
+            </div>
 
-<!-- ── RESET RULES ── -->
-<div class="reset-box">
-  <h2>Reset cascade (why it feels complex)</h2>
-  <div class="reset-rule"><strong>Change property</strong> &rarr; operator gone, value gone, error gone. Back to needs-operator.</div>
-  <div class="reset-rule"><strong>Change operator</strong> &rarr; value gone, error gone. Back to needs-value (or ready for any/none).</div>
-  <div class="reset-rule"><strong>Change value</strong> &rarr; parse OK? ready. Parse fail? stays needs-value + error.</div>
-  <div class="reset-rule"><strong>Clear</strong> &rarr; everything gone. Back to needs-property.</div>
-  <div style="margin-top: 0.75rem; font-size: 0.75rem; color: #94a3b8;">
-    Each level resets everything below it. That's the whole rule.
-  </div>
-</div>
+            <div class="scenario">
+                <div class="scenario-label example">
+                    Example: "Product Name" + "Equals" + "Headphones"
+                </div>
+                <div class="before-after">
+                    <div>
+                        <div class="ba-label">Before</div>
+                        <div class="ba-box">
+                            { stage: 'needs-value',<br />&nbsp;&nbsp;propertyId: 0,<br />&nbsp;&nbsp;operatorId:
+                            'equals' }<br />parseError: null
+                        </div>
+                    </div>
+                    <div class="ba-arrow">&rarr;</div>
+                    <div>
+                        <div class="ba-label">After</div>
+                        <div class="ba-box">
+                            { stage: '<span class="hi">ready</span>',<br />&nbsp;&nbsp;propertyId:
+                            0,<br />&nbsp;&nbsp;operatorId: 'equals',<br />&nbsp;&nbsp;value: {
+                            kind: 'text',<br />&nbsp;&nbsp;&nbsp;&nbsp;value: '<span class="hi"
+                                >Headphones</span
+                            >' } }<br />parseError: <span class="hi">null</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-<!-- ── DATA PIPELINE ── -->
-<div class="pipeline">
-  <div class="pipe-label">Data pipeline (what happens when filter is ready)</div>
-  <div class="pipe-step">
-    <div class="fn">raw string</div>
-    <div class="type">user types</div>
-  </div>
-  <div class="pipe-arrow">&rarr;</div>
-  <div class="pipe-step">
-    <div class="fn">parseRawValue()</div>
-    <div class="type">ParseResult&lt;CriteriaValue&gt;</div>
-  </div>
-  <div class="pipe-arrow">&rarr;</div>
-  <div class="pipe-step">
-    <div class="fn">draft.value</div>
-    <div class="type">CriteriaValue</div>
-  </div>
-  <div class="pipe-arrow">&rarr;</div>
-  <div class="pipe-step">
-    <div class="fn">toCriteria()</div>
-    <div class="type">FilterCriteria</div>
-  </div>
-  <div class="pipe-arrow">&rarr;</div>
-  <div class="pipe-step">
-    <div class="fn">applyFilter()</div>
-    <div class="type">Product[]</div>
-  </div>
-  <div class="pipe-arrow">&rarr;</div>
-  <div class="pipe-step">
-    <div class="fn">filteredProducts</div>
-    <div class="type">rendered in table</div>
-  </div>
-</div>
+            <div class="scenario">
+                <div class="scenario-label example">
+                    Example: "weight (oz)" + "Is any of" + "3, 5"
+                </div>
+                <div class="before-after">
+                    <div>
+                        <div class="ba-label">Before</div>
+                        <div class="ba-box">
+                            { stage: 'needs-value',<br />&nbsp;&nbsp;propertyId: 2,<br />&nbsp;&nbsp;operatorId:
+                            'in' }
+                        </div>
+                    </div>
+                    <div class="ba-arrow">&rarr;</div>
+                    <div>
+                        <div class="ba-label">After</div>
+                        <div class="ba-box">
+                            { stage: '<span class="hi">ready</span>',<br />&nbsp;&nbsp;propertyId:
+                            2,<br />&nbsp;&nbsp;operatorId: 'in',<br />&nbsp;&nbsp;value: { kind:
+                            '<span class="hi">multi-number</span
+                            >',<br />&nbsp;&nbsp;&nbsp;&nbsp;values: [<span class="hi">3, 5</span>]
+                            } }<br /><br /><span style="color: #64748b"
+                                >// Matches: Headphones(5), Cell Phone(3),</span
+                            ><br /><span style="color: #64748b">// Keyboard(5), Cup(3)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-</body>
+            <div class="scenario">
+                <div class="scenario-label error">Error: "weight (oz)" + "Equals" + "abc"</div>
+                <div class="before-after">
+                    <div>
+                        <div class="ba-label">Before</div>
+                        <div class="ba-box">
+                            { stage: 'needs-value',<br />&nbsp;&nbsp;propertyId: 2,<br />&nbsp;&nbsp;operatorId:
+                            'equals' }<br />parseError: null
+                        </div>
+                    </div>
+                    <div class="ba-arrow">&rarr;</div>
+                    <div>
+                        <div class="ba-label">After</div>
+                        <div class="ba-box">
+                            { stage: 'needs-value',<br />&nbsp;&nbsp;propertyId: 2,<br />&nbsp;&nbsp;operatorId:
+                            'equals' }<br />parseError: '<span class="err"
+                                >Value must be a finite number</span
+                            >'<br /><br /><span style="color: #64748b"
+                                >// Stage stays needs-value.</span
+                            ><br /><span style="color: #64748b"
+                                >// Table still shows all products.</span
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scenario">
+                <div class="scenario-label error">
+                    Error: "category" + "Is any of" + "" (empty input)
+                </div>
+                <div class="before-after">
+                    <div>
+                        <div class="ba-label">Before</div>
+                        <div class="ba-box">
+                            { stage: 'needs-value',<br />&nbsp;&nbsp;propertyId: 3,<br />&nbsp;&nbsp;operatorId:
+                            'in' }
+                        </div>
+                    </div>
+                    <div class="ba-arrow">&rarr;</div>
+                    <div>
+                        <div class="ba-label">After</div>
+                        <div class="ba-box">
+                            { stage: 'needs-value',<br />&nbsp;&nbsp;propertyId: 3,<br />&nbsp;&nbsp;operatorId:
+                            'in' }<br />parseError: '<span class="err"
+                                >At least one value is required</span
+                            >'
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── clear ── -->
+        <div class="method-card action">
+            <div class="method-header">
+                <div class="method-name">clear()</div>
+                <span class="method-badge badge-action">action</span>
+            </div>
+            <div class="method-purpose">
+                Full reset. Returns to initial state. All 6 products visible again.
+            </div>
+            <div class="method-sig">dispatch({ type: 'clear' })</div>
+
+            <div class="scenario">
+                <div class="scenario-label example">Example: clear after filtering</div>
+                <div class="before-after">
+                    <div>
+                        <div class="ba-label">Before (any state)</div>
+                        <div class="ba-box">
+                            { stage: 'ready',<br />&nbsp;&nbsp;propertyId: 0,<br />&nbsp;&nbsp;operatorId:
+                            'equals',<br />&nbsp;&nbsp;value: { kind: 'text', value: 'Headphones' }
+                            }<br />parseError: null<br /><br /><span style="color: #64748b"
+                                >// Table shows 1 product</span
+                            >
+                        </div>
+                    </div>
+                    <div class="ba-arrow">&rarr;</div>
+                    <div>
+                        <div class="ba-label">After (always this)</div>
+                        <div class="ba-box">
+                            { stage: '<span class="hi">needs-property</span>' }<br />parseError:
+                            <span class="hi">null</span><br /><br /><span style="color: #64748b"
+                                >// Table shows all 6 products</span
+                            ><br /><span style="color: #64748b">// All dropdowns reset</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <div class="section-title">
+            Derived State <span>computed on every render, never stored</span>
+        </div>
+
+        <div class="tip">
+            <strong>Why derived?</strong> The draft is the single source of truth. Everything below
+            is calculated from it. No stale state, no sync bugs.
+        </div>
+
+        <!-- ── validOperators ── -->
+        <div class="method-card derived">
+            <div class="method-header">
+                <div class="method-name">validOperators</div>
+                <span class="method-badge badge-derived">derived</span>
+            </div>
+            <div class="method-purpose">
+                Which operators appear in the dropdown. Determined by the selected property's type,
+                looked up in the compatibility matrix.
+            </div>
+            <div class="method-sig">
+                COMPATIBILITY[property.type] &rarr; filtered from operators catalog
+            </div>
+
+            <div class="scenario">
+                <div class="scenario-label example">Property = "Product Name" (string)</div>
+                <div class="scenario-content">
+                    <code>validOperators</code> = Equals, Has any value, Has no value, Is any of,
+                    Contains
+                </div>
+            </div>
+            <div class="scenario">
+                <div class="scenario-label example">Property = "weight (oz)" (number)</div>
+                <div class="scenario-content">
+                    <code>validOperators</code> = Equals, Is greater than, Is less than, Has any
+                    value, Has no value, Is any of
+                </div>
+            </div>
+            <div class="scenario">
+                <div class="scenario-label example">Property = "category" (enumerated)</div>
+                <div class="scenario-content">
+                    <code>validOperators</code> = Equals, Has any value, Has no value, Is any of
+                </div>
+            </div>
+            <div class="scenario">
+                <div class="scenario-label edge">No property selected</div>
+                <div class="scenario-content">
+                    <code>validOperators</code> = <code>[]</code> &mdash; operator dropdown hidden
+                </div>
+            </div>
+        </div>
+
+        <!-- ── inputKind ── -->
+        <div class="method-card derived">
+            <div class="method-header">
+                <div class="method-name">inputKind</div>
+                <span class="method-badge badge-derived">derived</span>
+            </div>
+            <div class="method-purpose">
+                Tells the UI <em>what kind of input</em> to render. The UI never branches on
+                property type or operator &mdash; it only reads this value.
+            </div>
+            <div class="method-sig">
+                valueInputKindFor(property, operator) &rarr; ValueInputKind | null
+            </div>
+
+            <div class="scenario">
+                <div class="scenario-label example">
+                    Examples of (property, operator) &rarr; inputKind
+                </div>
+                <div
+                    class="scenario-content"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 1.5rem"
+                >
+                    <div><code>string + equals</code></div>
+                    <div>&rarr; <code>'text'</code> (single text field)</div>
+                    <div><code>number + greater_than</code></div>
+                    <div>&rarr; <code>'number'</code> (single number field)</div>
+                    <div><code>string + in</code></div>
+                    <div>&rarr; <code>'multi-text'</code> (comma-separated text)</div>
+                    <div><code>number + in</code></div>
+                    <div>&rarr; <code>'multi-number'</code> (comma-separated numbers)</div>
+                    <div><code>enumerated + equals</code></div>
+                    <div>&rarr; <code>'enum-single'</code> (single-select dropdown)</div>
+                    <div><code>enumerated + in</code></div>
+                    <div>&rarr; <code>'enum-multi'</code> (multi-select)</div>
+                    <div><code>any type + any/none</code></div>
+                    <div>&rarr; <code>'none'</code> (no input shown)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── filteredProducts ── -->
+        <div class="method-card derived">
+            <div class="method-header">
+                <div class="method-name">filteredProducts</div>
+                <span class="method-badge badge-derived">derived</span>
+            </div>
+            <div class="method-purpose">
+                What the table renders. If the draft is <strong>ready</strong>, applies the filter.
+                Otherwise, all products.
+            </div>
+            <div class="method-sig">
+                isReady(draft) ? applyFilter(products, toCriteria(draft)) : products
+            </div>
+
+            <div class="scenario">
+                <div class="scenario-label example">
+                    Draft is ready: "Product Name" + "Contains" + "phone"
+                </div>
+                <div class="scenario-content">
+                    <code>filteredProducts</code> = [Headphones, Cell Phone] &mdash; 2 of 6 rows
+                    shown
+                </div>
+            </div>
+            <div class="scenario">
+                <div class="scenario-label example">Draft is NOT ready (any other stage)</div>
+                <div class="scenario-content">
+                    <code>filteredProducts</code> = all 6 products &mdash; no filtering applied
+                </div>
+            </div>
+        </div>
+
+        <!-- ── parseError ── -->
+        <div class="method-card derived">
+            <div class="method-header">
+                <div class="method-name">parseError</div>
+                <span class="method-badge badge-derived">derived</span>
+            </div>
+            <div class="method-purpose">
+                If the last <code>setValue</code> call failed, this holds the error message. Shown
+                inline next to the input. Cleared on any successful action.
+            </div>
+            <div class="method-sig">state.parseError: string | null</div>
+
+            <div class="scenario">
+                <div class="scenario-label error">Examples</div>
+                <div
+                    class="scenario-content"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 1.5rem"
+                >
+                    <div>Number field gets <code>"abc"</code></div>
+                    <div>&rarr; <code>"Value must be a finite number"</code></div>
+                    <div>Text field gets <code>""</code></div>
+                    <div>&rarr; <code>"Value cannot be empty"</code></div>
+                    <div>Multi-number gets <code>"10, abc, 20"</code></div>
+                    <div>&rarr; <code>"Value must be a finite number"</code></div>
+                    <div>Enum gets <code>"invalid"</code></div>
+                    <div>&rarr; <code>"Invalid value: invalid"</code></div>
+                    <div>Anything valid</div>
+                    <div>&rarr; <code>null</code> (cleared)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <div class="section-title">
+            The Reset Cascade <span>the one rule that ties it together</span>
+        </div>
+
+        <div class="reset-box">
+            <h2>Each level resets everything below it</h2>
+            <div class="reset-rule">
+                <strong>selectProperty</strong> &rarr; operator gone, value gone, error gone
+            </div>
+            <div class="reset-rule">
+                <strong>selectOperator</strong> &rarr; value gone, error gone
+            </div>
+            <div class="reset-rule">
+                <strong>setValue (fail)</strong> &rarr; error set, stays at needs-value
+            </div>
+            <div class="reset-rule"><strong>clear</strong> &rarr; everything gone</div>
+            <div style="margin-top: 1rem; font-size: 0.8rem; color: #94a3b8">
+                <strong>Why?</strong> A new property might not support the old operator (e.g.
+                switching from number to string loses "greater_than"). A new operator might change
+                the value input kind (e.g. "equals" needs text, "is any of" needs multi-text).
+                Resetting downstream prevents impossible combinations.
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════ -->
+        <div class="section-title">
+            Full Data Pipeline <span>from user action to rendered table</span>
+        </div>
+
+        <div class="pipeline">
+            <div class="pipe-label">What happens end-to-end when the user completes a filter</div>
+            <div class="pipe-step">
+                <div class="fn">"Headphones"</div>
+                <div class="type">user types raw string</div>
+            </div>
+            <div class="pipe-arrow">&rarr;</div>
+            <div class="pipe-step">
+                <div class="fn">parseRawValue()</div>
+                <div class="type">&rarr; { ok, value }</div>
+            </div>
+            <div class="pipe-arrow">&rarr;</div>
+            <div class="pipe-step">
+                <div class="fn">draft.value</div>
+                <div class="type">CriteriaValue</div>
+            </div>
+            <div class="pipe-arrow">&rarr;</div>
+            <div class="pipe-step">
+                <div class="fn">toCriteria(draft)</div>
+                <div class="type">FilterCriteria</div>
+            </div>
+            <div class="pipe-arrow">&rarr;</div>
+            <div class="pipe-step">
+                <div class="fn">applyFilter(products, criteria)</div>
+                <div class="type">Product[]</div>
+            </div>
+            <div class="pipe-arrow">&rarr;</div>
+            <div class="pipe-step">
+                <div class="fn">filteredProducts</div>
+                <div class="type">1 row in table</div>
+            </div>
+        </div>
+
+        <div class="tip" style="margin-top: 1.5rem">
+            <strong>That's the entire controller.</strong> 4 actions go in, 4 derived values come
+            out. The reducer handles transitions, the domain functions handle logic. The controller
+            just wires them together.
+        </div>
+    </body>
 </html>
