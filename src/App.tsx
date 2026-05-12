@@ -17,6 +17,11 @@ export default function App() {
                     properties={controller.properties}
                     selectedProperty={controller.selectedProperty}
                     onSelectProperty={controller.selectProperty}
+                    operators={controller.validOperators}
+                    selectedOperatorId={controller.selectedOperator?.id}
+                    onSelectOperator={controller.selectOperator}
+                    inputKind={controller.inputKind}
+                    onCommitValue={controller.setValue}
                 />
                 <ProductTable
                     properties={controller.properties}

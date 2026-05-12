@@ -1,29 +1,16 @@
 # Conventions
 
-Cross-cutting rules. How errors move through the app, how things are named, and what we are explicitly _not_ building.
+Important things to settle when starting a new application:
 
-## Error handling
+- variable naming convention
+- coding standards (e.g. when to use ternary operators vs if statements)
+- how errors and edge cases are handled
 
-### The taxonomy
+## Variable naming
 
-There are three kinds of failure, and they take three different paths:
+It's really important to establish a naming convention, particularly when working with a team. If the business states the "Prodcut has properties", then calling them "Product-attributes" will lead to confusion and communication issues when developers need to cross with product/design.
 
-**1. Programmer errors (bugs).** A `null` where a `Product` was promised. An unknown operator id reaching the filter engine. An exhaustive switch hitting its default. These should not "trickle to the UI as a recoverable error state" — they should fail loudly in development (throw, surface in console) and in production get caught by a root-level error boundary that renders a generic fallback. Recovering from them inside business logic is wrong; we want the noise.
-
-**2. User input errors (parse failures).** The user typed `abc` in a number field. This is not an "error" in the application sense — it's an ordinary UI state. The domain returns a `ParseResult<T>` from `parseRawValue`, the application layer surfaces the message, and the View renders it inline next to the offending input. Apply is disabled while a parse error is present. No exceptions. Nothing touches the logger.
-
-**3. System / boundary errors (malformed datastore).** Shape validation at the infrastructure boundary fails. Rare and catastrophic. The validator throws; the application layer catches at load time, logs via the logger port, and exposes a `dataError` state. The View renders a catastrophic message ("Products couldn't be loaded"). The user has no recovery path.
-
-### The rules
-
-- **Logger port.** A `logger` module exposes `error(message, context?)`, `warn(message, context?)`, `info(message, context?)`. Implementation writes to console today, swappable later. Domain and infrastructure may call the logger. View components should not — they communicate through the application controller.
-- **Domain functions never throw on valid inputs.** Their signatures are total. Where valid input can legitimately fail to produce a value (parsing raw user input), they return `ParseResult<T>` rather than throwing.
-- **Infrastructure validators throw on malformed data.** This is a programmer-error path. The throw is caught once, at application controller load.
-- **One root error boundary.** Wraps the view tree. Catches anything unexpected. Logs the error via the logger port. Renders a generic fallback.
-- **Disabled-Apply over silent failure.** When the draft is incomplete or has a parse error, Apply is disabled. The user should not be able to click and see nothing happen.
-- **No silent catch-and-continue.** If a domain function ever needs `try/catch`, the type contract is wrong. Fix the contract, don't swallow the error.
-
-## Naming
+In a more realistic scenario, these standards would have to be discussed and alligned with the team. Linters and TypeCheckers can do a lot of the heavy lifting, but it's relevant that the code reads as one, not "this part was written by X". Establishing simple rules such as "avoid ternary operators in favour or if statements" are important so that the code remains readable and acessible. Particularly more so with the introduction of agentic generative tools that input a lot of the code. The goal is to make the review process as smooth as possible.
 
 **Files.**
 
@@ -60,19 +47,19 @@ There are three kinds of failure, and they take three different paths:
 
 **No abbreviations** unless universal. `id`, `url`, `db` are fine. `prop`, `op`, `el` are not — use `property`, `operator`, `element`.
 
-**Comments on assumptions.** Every code path depending on a documented assumption from `assumptions.md` carries a short comment referencing it: `// Assumes case-insensitive — see assumptions.md#string-comparison-case-sensitivity`.
+## Error handling
+
+TODO
 
 ## Explicitly deferred
 
-Production concerns we are deliberately not building. Listing them
-shows awareness of scope, not intent to build.
+Production concerns deliberately not built.
 
 - **Accessibility** — Semantic HTML where free, but no WCAG audit,
   ARIA live regions, or assistive technology testing.
 - **Internationalization** — English only, hardcoded inline, no
   locale-aware formatting or RTL support.
 - **Performance** — No budgets, no virtualization, no code splitting.
-  Six rows doesn't need it.
 - **CSS architecture** — No design tokens, theming, dark mode, or
   responsive breakpoints. Desktop-first.
 - **CI/CD and tooling** — No pipeline, no deploy target.

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>useFilterController — Visual Guide</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; padding: 2rem; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.25rem; color: #f8fafc; }
+  .subtitle { color: #94a3b8; font-size: 0.85rem; margin-bottom: 2rem; }
+
+  /* ── State machine ── */
+  .machine { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 2.5rem; flex-wrap: wrap; }
+  .state {
+    border: 2px solid #334155; border-radius: 12px; padding: 1rem 1.25rem;
+    min-width: 160px; position: relative; cursor: pointer; transition: all 0.2s;
+  }
+  .state:hover, .state.active { border-color: #38bdf8; background: #1e293b; }
+  .state-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem; }
+  .state-desc { font-size: 0.75rem; color: #94a3b8; }
+  .state-tag {
+    position: absolute; top: -8px; right: 10px; font-size: 0.6rem; font-weight: 600;
+    padding: 1px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .tag-start { background: #1e40af; color: #93c5fd; }
+  .tag-ready { background: #166534; color: #86efac; }
+
+  .arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 80px; padding-top: 0.5rem; }
+  .arrow-line { color: #38bdf8; font-size: 1.4rem; }
+  .arrow-label { font-size: 0.65rem; color: #67e8f9; font-weight: 600; text-align: center; }
+  .arrow-note { font-size: 0.6rem; color: #64748b; text-align: center; margin-top: 2px; }
+
+  /* ── Two-column layout ── */
+  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+  @media (max-width: 800px) { .columns { grid-template-columns: 1fr; } }
+
+  .panel { background: #1e293b; border-radius: 12px; padding: 1.25rem; }
+  .panel h2 { font-size: 0.95rem; color: #f8fafc; margin-bottom: 0.75rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+
+  /* ── Derived state ── */
+  .derived { display: flex; flex-direction: column; gap: 0.5rem; }
+  .derived-item { display: flex; align-items: flex-start; gap: 0.5rem; }
+  .derived-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .dot-blue { background: #38bdf8; }
+  .dot-green { background: #4ade80; }
+  .dot-amber { background: #fbbf24; }
+  .dot-purple { background: #a78bfa; }
+  .derived-text { font-size: 0.8rem; }
+  .derived-code { color: #67e8f9; font-family: monospace; font-size: 0.75rem; }
+
+  /* ── Actions table ── */
+  .actions-table { width: 100%; font-size: 0.8rem; }
+  .actions-table td { padding: 0.4rem 0; vertical-align: top; }
+  .actions-table td:first-child { font-family: monospace; color: #67e8f9; white-space: nowrap; padding-right: 1rem; font-size: 0.75rem; }
+  .actions-table tr + tr td { border-top: 1px solid #1e293b; }
+
+  /* ── Reset rules ── */
+  .reset-box { background: #1e293b; border-radius: 12px; padding: 1.25rem; border-left: 3px solid #f59e0b; }
+  .reset-box h2 { font-size: 0.95rem; color: #fbbf24; margin-bottom: 0.75rem; }
+  .reset-rule { font-size: 0.8rem; margin-bottom: 0.4rem; padding-left: 0.75rem; border-left: 2px solid #334155; }
+  .reset-rule strong { color: #fbbf24; }
+
+  /* ── Pipeline ── */
+  .pipeline { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 2rem; padding: 1.25rem; background: #1e293b; border-radius: 12px; }
+  .pipe-step {
+    background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+    padding: 0.5rem 0.75rem; font-size: 0.75rem; text-align: center;
+  }
+  .pipe-step .fn { color: #67e8f9; font-family: monospace; font-weight: 600; }
+  .pipe-step .type { color: #94a3b8; font-size: 0.65rem; margin-top: 2px; }
+  .pipe-arrow { color: #475569; font-size: 1.2rem; }
+  .pipe-label { width: 100%; font-size: 0.75rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+</style>
+</head>
+<body>
+
+<h1>useFilterController</h1>
+<p class="subtitle">The controller is a state machine + derived computations. That's it.</p>
+
+<!-- ── STATE MACHINE ── -->
+<div class="machine">
+  <div class="state" id="s1">
+    <span class="state-tag tag-start">start</span>
+    <div class="state-name">needs-property</div>
+    <div class="state-desc">Nothing selected yet</div>
+  </div>
+  <div class="arrow">
+    <div class="arrow-label">selectProperty</div>
+    <div class="arrow-line">&rarr;</div>
+    <div class="arrow-note">resets all</div>
+  </div>
+  <div class="state" id="s2">
+    <div class="state-name">needs-operator</div>
+    <div class="state-desc">Property chosen, pick operator</div>
+  </div>
+  <div class="arrow">
+    <div class="arrow-label">selectOperator</div>
+    <div class="arrow-line">&rarr;</div>
+    <div class="arrow-note">any/none skip value</div>
+  </div>
+  <div class="state" id="s3">
+    <div class="state-name">needs-value</div>
+    <div class="state-desc">Type a value or pick from enum</div>
+  </div>
+  <div class="arrow">
+    <div class="arrow-label">setValue</div>
+    <div class="arrow-line">&rarr;</div>
+    <div class="arrow-note">parse succeeds</div>
+  </div>
+  <div class="state" id="s4">
+    <span class="state-tag tag-ready">ready</span>
+    <div class="state-name">ready</div>
+    <div class="state-desc">Filter applied, table updates</div>
+  </div>
+</div>
+
+<div class="columns">
+  <!-- ── DERIVED STATE ── -->
+  <div class="panel">
+    <h2>Derived from draft (computed, not stored)</h2>
+    <div class="derived">
+      <div class="derived-item">
+        <div class="derived-dot dot-blue"></div>
+        <div>
+          <div class="derived-text"><strong>validOperators</strong></div>
+          <div class="derived-code">COMPATIBILITY[property.type] &rarr; Operator[]</div>
+        </div>
+      </div>
+      <div class="derived-item">
+        <div class="derived-dot dot-green"></div>
+        <div>
+          <div class="derived-text"><strong>inputKind</strong></div>
+          <div class="derived-code">valueInputKindFor(property, operator) &rarr; ValueInputKind</div>
+        </div>
+      </div>
+      <div class="derived-item">
+        <div class="derived-dot dot-amber"></div>
+        <div>
+          <div class="derived-text"><strong>filteredProducts</strong></div>
+          <div class="derived-code">isReady? applyFilter(products, toCriteria(draft)) : allProducts</div>
+        </div>
+      </div>
+      <div class="derived-item">
+        <div class="derived-dot dot-purple"></div>
+        <div>
+          <div class="derived-text"><strong>parseError</strong></div>
+          <div class="derived-code">setValue failed? error string : null</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ACTIONS ── -->
+  <div class="panel">
+    <h2>4 actions (dispatched to filterReducer)</h2>
+    <table class="actions-table">
+      <tr>
+        <td>selectProperty(id)</td>
+        <td>&rarr; needs-operator, clears operator + value + error</td>
+      </tr>
+      <tr>
+        <td>selectOperator(id)</td>
+        <td>&rarr; needs-value (or &rarr; ready if any/none), clears value + error</td>
+      </tr>
+      <tr>
+        <td>setValue(raw)</td>
+        <td>&rarr; ready if parse OK, stays needs-value + sets parseError if not</td>
+      </tr>
+      <tr>
+        <td>clear()</td>
+        <td>&rarr; needs-property, everything resets</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ── RESET RULES ── -->
+<div class="reset-box">
+  <h2>Reset cascade (why it feels complex)</h2>
+  <div class="reset-rule"><strong>Change property</strong> &rarr; operator gone, value gone, error gone. Back to needs-operator.</div>
+  <div class="reset-rule"><strong>Change operator</strong> &rarr; value gone, error gone. Back to needs-value (or ready for any/none).</div>
+  <div class="reset-rule"><strong>Change value</strong> &rarr; parse OK? ready. Parse fail? stays needs-value + error.</div>
+  <div class="reset-rule"><strong>Clear</strong> &rarr; everything gone. Back to needs-property.</div>
+  <div style="margin-top: 0.75rem; font-size: 0.75rem; color: #94a3b8;">
+    Each level resets everything below it. That's the whole rule.
+  </div>
+</div>
+
+<!-- ── DATA PIPELINE ── -->
+<div class="pipeline">
+  <div class="pipe-label">Data pipeline (what happens when filter is ready)</div>
+  <div class="pipe-step">
+    <div class="fn">raw string</div>
+    <div class="type">user types</div>
+  </div>
+  <div class="pipe-arrow">&rarr;</div>
+  <div class="pipe-step">
+    <div class="fn">parseRawValue()</div>
+    <div class="type">ParseResult&lt;CriteriaValue&gt;</div>
+  </div>
+  <div class="pipe-arrow">&rarr;</div>
+  <div class="pipe-step">
+    <div class="fn">draft.value</div>
+    <div class="type">CriteriaValue</div>
+  </div>
+  <div class="pipe-arrow">&rarr;</div>
+  <div class="pipe-step">
+    <div class="fn">toCriteria()</div>
+    <div class="type">FilterCriteria</div>
+  </div>
+  <div class="pipe-arrow">&rarr;</div>
+  <div class="pipe-step">
+    <div class="fn">applyFilter()</div>
+    <div class="type">Product[]</div>
+  </div>
+  <div class="pipe-arrow">&rarr;</div>
+  <div class="pipe-step">
+    <div class="fn">filteredProducts</div>
+    <div class="type">rendered in table</div>
+  </div>
+</div>
+
+</body>
+</html>

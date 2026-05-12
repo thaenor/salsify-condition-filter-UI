@@ -2,6 +2,27 @@
 
 The domain is the rules of the problem, expressed as data and pure functions. No I/O, no DOM, no framework imports. Every function is total — given valid inputs, always a defined output.
 
+```mermaid
+stateDiagram-v2
+    [*] --> needs_property
+    needs_property --> needs_operator : select property
+    needs_operator --> needs_value : select operator
+    needs_operator --> ready : any / none (no value needed)
+    needs_value --> ready : enter valid value
+    ready --> [*] : apply filter
+    ready --> [*] : clear
+```
+
+```mermaid
+flowchart LR
+    A["Raw input"] --> B["parseRawValue"]
+    B --> C["CriteriaValue"]
+    C --> D["toCriteria"]
+    D --> E["FilterCriteria"]
+    E --> F["applyFilter"]
+    F --> G["Product[]"]
+```
+
 ## Types
 
 ### Product
