@@ -1,27 +1,56 @@
 import type { Property, Operator, ValueInputKind, CriteriaValue, ParseResult } from './types';
 
+const VALUE_INPUT_MAP: Record<string, Record<string, ValueInputKind>> = {
+    string: {
+        equals: "text",
+        contains: "text",
+        greater_than: "text",
+        less_than: "text",
+        any: "none",
+        none: "none",
+        in: "multi-text",
+    },
+    number: {
+        equals: "number",
+        contains: "number",
+        greater_than: "number",
+        less_than: "number",
+        any: "none",
+        none: "none",
+        in: "multi-number",
+    },
+    enumerated: {
+        equals: "enum-single",
+        contains: "enum-single",
+        greater_than: "enum-single",
+        less_than: "enum-single",
+        any: "none",
+        none: "none",
+        in: "enum-multi",
+    },
+};
+
 export function valueInputKindFor(property: Property, operator: Operator): ValueInputKind {
-  if (operator.id === 'any' || operator.id === 'none') {
-    return 'none';
-  }
+    return VALUE_INPUT_MAP[property.type][operator.id];
+}
 
-  if (operator.id === 'in') {
-    if (property.type === 'string') {
-      return 'multi-text';
-    } else if (property.type === 'number') {
-      return 'multi-number';
-    } else {
-      return 'enum-multi';
+function splitTokens(raw: string): string[] {
+    return raw
+        .split(",")
+        .map((t) => t.trim())
+        .filter((t) => t !== "");
+}
+
+function parseFiniteNumber(s: string): ParseResult<number> {
+    const trimmed = s.trim();
+    if (trimmed === "") {
+        return { ok: false, error: "Value cannot be empty" };
     }
-  }
-
-  if (property.type === 'string') {
-    return 'text';
-  } else if (property.type === 'number') {
-    return 'number';
-  } else {
-    return 'enum-single';
-  }
+    const num = Number(trimmed);
+    if (!Number.isFinite(num)) {
+        return { ok: false, error: "Value must be a finite number" };
+    }
+    return { ok: true, value: num };
 }
 
 export function parseRawValue(
@@ -31,86 +60,68 @@ export function parseRawValue(
 ): ParseResult<CriteriaValue> {
   const kind = valueInputKindFor(property, operator);
 
-  if (kind === 'none') {
-    return { ok: true, value: { kind: 'none' } };
-  }
+  switch (kind) {
+      case "none":
+          return { ok: true, value: { kind: "none" } };
 
-  if (kind === 'text') {
-    const trimmed = raw.trim();
-    if (trimmed === '') {
-      return { ok: false, error: 'Value cannot be empty' };
-    }
-    return { ok: true, value: { kind: 'text', value: trimmed } };
-  }
-
-  if (kind === 'number') {
-    const trimmed = raw.trim();
-    if (trimmed === '') {
-      return { ok: false, error: 'Value cannot be empty' };
-    }
-    const num = Number(trimmed);
-    if (!Number.isFinite(num)) {
-      return { ok: false, error: 'Value must be a finite number' };
-    }
-    return { ok: true, value: { kind: 'number', value: num } };
-  }
-
-  if (kind === 'multi-text') {
-    const tokens = raw
-      .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t !== '');
-    if (tokens.length === 0) {
-      return { ok: false, error: 'At least one value is required' };
-    }
-    return { ok: true, value: { kind: 'multi-text', values: tokens } };
-  }
-
-  if (kind === 'multi-number') {
-    const tokens = raw
-      .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t !== '');
-    if (tokens.length === 0) {
-      return { ok: false, error: 'At least one value is required' };
-    }
-    const numbers: number[] = [];
-    for (const token of tokens) {
-      const num = Number(token);
-      if (!Number.isFinite(num)) {
-        return { ok: false, error: `Invalid number: ${token}` };
+      case "text": {
+          const trimmed = raw.trim();
+          if (trimmed === "") {
+              return { ok: false, error: "Value cannot be empty" };
+          }
+          return { ok: true, value: { kind: "text", value: trimmed } };
       }
-      numbers.push(num);
-    }
-    return { ok: true, value: { kind: 'multi-number', values: numbers } };
-  }
 
-  if (kind === 'enum-single') {
-    const trimmed = raw.trim();
-    if (trimmed === '') {
-      return { ok: false, error: 'Value cannot be empty' };
-    }
-    if (!property.values!.includes(trimmed)) {
-      return { ok: false, error: `Invalid value: ${trimmed}` };
-    }
-    return { ok: true, value: { kind: 'enum-single', value: trimmed } };
-  }
-
-  if (kind === 'enum-multi') {
-    const tokens = raw
-      .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t !== '');
-    if (tokens.length === 0) {
-      return { ok: false, error: 'At least one value is required' };
-    }
-    for (const token of tokens) {
-      if (!property.values!.includes(token)) {
-        return { ok: false, error: `Invalid value: ${token}` };
+      case "number": {
+          const result = parseFiniteNumber(raw);
+          if (!result.ok) return result;
+          return { ok: true, value: { kind: "number", value: result.value } };
       }
-    }
-    return { ok: true, value: { kind: 'enum-multi', values: tokens } };
-  }
 
-  return { ok: false, error: 'Unknown input kind' };
+      case "multi-text": {
+          const tokens = splitTokens(raw);
+          if (tokens.length === 0) {
+              return { ok: false, error: "At least one value is required" };
+          }
+          return { ok: true, value: { kind: "multi-text", values: tokens } };
+      }
+
+      case "multi-number": {
+          const tokens = splitTokens(raw);
+          if (tokens.length === 0) {
+              return { ok: false, error: "At least one value is required" };
+          }
+          const numbers: number[] = [];
+          for (const token of tokens) {
+              const result = parseFiniteNumber(token);
+              if (!result.ok) return result;
+              numbers.push(result.value);
+          }
+          return { ok: true, value: { kind: "multi-number", values: numbers } };
+      }
+
+      case "enum-single": {
+          const trimmed = raw.trim();
+          if (trimmed === "") {
+              return { ok: false, error: "Value cannot be empty" };
+          }
+          if (!property.values!.includes(trimmed)) {
+              return { ok: false, error: `Invalid value: ${trimmed}` };
+          }
+          return { ok: true, value: { kind: "enum-single", value: trimmed } };
+      }
+
+      case "enum-multi": {
+          const tokens = splitTokens(raw);
+          if (tokens.length === 0) {
+              return { ok: false, error: "At least one value is required" };
+          }
+          for (const token of tokens) {
+              if (!property.values!.includes(token)) {
+                  return { ok: false, error: `Invalid value: ${token}` };
+              }
+          }
+          return { ok: true, value: { kind: "enum-multi", values: tokens } };
+      }
+  }
 }
