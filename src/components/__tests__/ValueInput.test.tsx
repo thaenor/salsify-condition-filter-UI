@@ -15,9 +15,18 @@ describe('ValueInput', () => {
         expect(container.firstChild).toBeNull();
     });
 
-    it.todo('renders NumberInput when inputKind is number');
-    it.todo('renders MultiTextInput when inputKind is multi-text');
+    it('renders NumberInput when inputKind is number', () => {
+        render(<ValueInput inputKind="number" onCommit={vi.fn()} />);
+        expect(screen.getByRole('spinbutton')).toBeInTheDocument();
+    });
+    it('renders MultiTextInput when inputKind is multi-text', () => {
+        render(<ValueInput inputKind="multi-text" onCommit={vi.fn()} />);
+        expect(screen.getByRole('textbox')).toBeInTheDocument();
+    });
     it.todo('renders MultiNumberInput when inputKind is multi-number');
-    it.todo('renders EnumSingleInput when inputKind is enum-single');
+    it('renders EnumSingleSelect when inputKind is enum-single', () => {
+        render(<ValueInput inputKind="enum-single" onCommit={vi.fn()} options={['a', 'b']} />);
+        expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
     it.todo('renders EnumMultiInput when inputKind is enum-multi');
 });

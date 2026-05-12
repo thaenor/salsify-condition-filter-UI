@@ -22,6 +22,7 @@ export default function App() {
                     onSelectOperator={controller.selectOperator}
                     inputKind={controller.inputKind}
                     onCommitValue={controller.setValue}
+                    enumOptions={controller.selectedProperty?.values ?? []}
                 />
                 <ProductTable
                     properties={controller.properties}

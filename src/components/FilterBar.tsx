@@ -12,6 +12,7 @@ interface FilterBarProps {
     onSelectOperator: (id: OperatorId) => void;
     inputKind: ValueInputKind | null;
     onCommitValue: (value: string) => void;
+    enumOptions: string[];
 }
 
 export function FilterBar({
@@ -23,6 +24,7 @@ export function FilterBar({
     onSelectOperator,
     inputKind,
     onCommitValue,
+    enumOptions,
 }: FilterBarProps) {
     return (
         <div className="bg-card border rounded-lg p-4 flex gap-4 items-end">
@@ -39,7 +41,7 @@ export function FilterBar({
                 />
             )}
             {inputKind && inputKind !== 'none' && (
-                <ValueInput inputKind={inputKind} onCommit={onCommitValue} />
+                <ValueInput inputKind={inputKind} onCommit={onCommitValue} options={enumOptions} />
             )}
         </div>
     );
