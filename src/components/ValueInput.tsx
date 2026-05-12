@@ -1,8 +1,9 @@
 import type { ValueInputKind } from '../domain/types';
 import { TextInput } from './TextInput';
 import { NumberInput } from './NumberInput';
+import { MultiInput } from './MultiInput';
 import { EnumSingleSelect } from './EnumSingleSelect';
-import { MultiTextInput } from './MultiTextInput';
+import { EnumMultiSelect } from './EnumMultiSelect';
 
 interface ValueInputProps {
     inputKind: ValueInputKind;
@@ -17,12 +18,14 @@ export function ValueInput({ inputKind, onCommit, options = [] }: ValueInputProp
         case 'number':
             return <NumberInput onCommit={onCommit} />;
         case 'multi-text':
-            return <MultiTextInput onCommit={onCommit} />;
+            return <MultiInput onCommit={onCommit} placeholder="e.g. Headphones, Keys" />;
+        case 'multi-number':
+            return <MultiInput onCommit={onCommit} placeholder="e.g. 10, 20, 30" />;
         case 'enum-single':
             return <EnumSingleSelect options={options} onCommit={onCommit} />;
+        case 'enum-multi':
+            return <EnumMultiSelect options={options} onCommit={onCommit} />;
         case 'none':
-            return null;
-        default:
             return null;
     }
 }
