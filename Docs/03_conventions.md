@@ -34,7 +34,7 @@ In a more realistic scenario, these standards would have to be discussed and ali
 **Types and tagged unions.**
 
 - Type names: `PascalCase` (`Product`, `FilterCriteria`, `ValueInputKind`).
-- Discriminator field: always `kind` (not `type`, which collides with `Property.type`).
+- Discriminator field: `kind` by default (not `type`, which collides with `Property.type`). Exception: `FilterDraft` uses `stage` to avoid visual collision with `CriteriaValue.kind` when nested.
 
 **Constants.**
 
@@ -50,7 +50,7 @@ In a more realistic scenario, these standards would have to be discussed and ali
 ## Exports
 
 - **Prefer named exports.** Consistent import names across the codebase, better IDE autocompletion, and easier to grep.
-- **Exceptions:** `App` (Vite convention) and `datastore` use default exports. Not worth changing, but new modules should use named exports.
+- **Exceptions:** `App` (Vite convention), `datastore`, and `InfoIcon` use default exports. Not worth changing, but new modules should use named exports.
 
 ## Error handling
 
@@ -89,7 +89,7 @@ Production concerns deliberately not built.
 - **State persistence** — In-memory only. No URL encoding, no
   localStorage.
 - **Automated a11y / visual regression testing** — Baseline a11y is
-  in place (see [06_accessibility.md](./06_accessibility.md)), but no
+  in place (see [05_accessibility.md](./05_accessibility.md)), but no
   accessibility integration tests or visual regression tooling.
 - **Security, SEO, PWA, compliance** — None in scope.
 

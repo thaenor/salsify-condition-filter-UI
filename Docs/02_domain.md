@@ -141,7 +141,7 @@ They are structurally identical today. Keeping them separate leaves room for div
 
 ## FilterCriteria
 
-Tagged union consistent with the rest of the domain. A future compound-filter variant (`{ kind: 'compound'; combinator: 'and' | 'or'; children: FilterCriteria[] }`) extends without changing existing branches.
+Tagged union consistent with the rest of the domain. New variants (e.g. compound filters) could be added without changing existing switch branches.
 
 ```ts
 type FilterCriteria =

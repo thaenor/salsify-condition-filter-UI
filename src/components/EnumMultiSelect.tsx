@@ -20,7 +20,9 @@ export function EnumMultiSelect({ options, onCommit }: EnumMultiSelectProps) {
             } else {
                 next.add(option);
             }
-            onCommit(Array.from(next).join(', '));
+            if (next.size > 0) {
+                onCommit(Array.from(next).join(', '));
+            }
             return next;
         });
     }

@@ -17,6 +17,7 @@ In a real scenario I would have put more time and consideration into testing acr
 Applies to operators that take a value (`equals`, `contains`, `is any of`, `greater_than`, `less_than`).
 
 **Decisions.**
+
 1. Trim user input on entry. Stored data is not normalized at compare time.
 2. After trimming, empty input means the filter is not applicable — Apply is disabled.
 
@@ -56,9 +57,9 @@ These operators take no input. Selecting the operator immediately readies the fi
 
 ## Duplicate `property_id` on a single product
 
-**Decision.** Malformed. Infrastructure validator rejects.
+**Decision.** Treated as malformed data. The domain doesn't guard against it — `applyFilter` uses `.find()`, so it would silently use the first match.
 
-**Why.** The spec doesn't say which value wins when a product has two entries for the same property. Rejecting bad data at the boundary means the domain never has to guess. In a realistic scenario this would have been picked up by our theoretical "data layer".
+**Why.** The spec doesn't say which value wins when a product has two entries for the same property. In a production setting, the infrastructure layer would validate and reject this at the boundary before the domain ever sees it.
 
 ## Multi-text/number input format
 

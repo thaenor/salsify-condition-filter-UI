@@ -5,8 +5,8 @@ interface TextInputProps {
 }
 
 // Raw input state lives here, not in the controller.
-// If a clear/reset button is added later, key this component on draft.stage
-// to let React unmount/remount and reset local state naturally.
+// FilterBar keys this component on selectedOperatorId, so React
+// unmounts/remounts it (resetting local state) when the operator changes.
 export function TextInput({ onCommit }: TextInputProps) {
     const [raw, setRaw] = useState('');
 
