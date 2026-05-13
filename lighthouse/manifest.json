@@ -1,0 +1,38 @@
+[
+  {
+    "url": "http://localhost:4173/",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_16_20_25.report.html",
+    "jsonPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_16_20_25.report.json",
+    "summary": {
+      "performance": 0.93,
+      "accessibility": 0.95,
+      "best-practices": 0.96,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/",
+    "isRepresentativeRun": false,
+    "htmlPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_16_20_48.report.html",
+    "jsonPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_16_20_48.report.json",
+    "summary": {
+      "performance": 0.99,
+      "accessibility": 0.95,
+      "best-practices": 0.96,
+      "seo": 0.82
+    }
+  },
+  {
+    "url": "http://localhost:4173/",
+    "isRepresentativeRun": true,
+    "htmlPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_16_20_37.report.html",
+    "jsonPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_16_20_37.report.json",
+    "summary": {
+      "performance": 0.99,
+      "accessibility": 0.95,
+      "best-practices": 0.96,
+      "seo": 0.82
+    }
+  }
+]
