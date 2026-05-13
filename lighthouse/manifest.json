@@ -2,8 +2,8 @@
   {
     "url": "http://localhost:4173/",
     "isRepresentativeRun": false,
-    "htmlPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_16_48_25.report.html",
-    "jsonPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_16_48_25.report.json",
+    "htmlPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_22_19_43.report.html",
+    "jsonPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_22_19_43.report.json",
     "summary": {
       "performance": 0.99,
       "accessibility": 0.95,
@@ -14,8 +14,8 @@
   {
     "url": "http://localhost:4173/",
     "isRepresentativeRun": false,
-    "htmlPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_16_48_37.report.html",
-    "jsonPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_16_48_37.report.json",
+    "htmlPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_22_20_06.report.html",
+    "jsonPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_22_20_06.report.json",
     "summary": {
       "performance": 0.99,
       "accessibility": 0.95,
@@ -26,8 +26,8 @@
   {
     "url": "http://localhost:4173/",
     "isRepresentativeRun": true,
-    "htmlPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_16_48_48.report.html",
-    "jsonPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_16_48_48.report.json",
+    "htmlPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_22_19_55.report.html",
+    "jsonPath": "/home/runner/work/salsify-condition-filter-UI/salsify-condition-filter-UI/lighthouse-report/localhost--2026_05_13_22_19_55.report.json",
     "summary": {
       "performance": 0.99,
       "accessibility": 0.95,
