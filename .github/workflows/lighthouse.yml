@@ -2,7 +2,7 @@ name: Lighthouse
 
 on:
     push:
-        branches: [main]
+        branches: [master]
     workflow_dispatch:
 
 permissions:
@@ -22,8 +22,9 @@ jobs:
             - run: npx vite preview --port 4173 &
             - run: sleep 3
             - run: npx lhci autorun --collect.url=http://localhost:4173
+            - run: cp -r lighthouse-report dist/lighthouse
             - uses: peaceiris/actions-gh-pages@v4
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
-                  publish_dir: ./lighthouse-report
+                  publish_dir: ./dist
                   publish_branch: gh-pages
