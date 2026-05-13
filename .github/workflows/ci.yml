@@ -2,9 +2,9 @@ name: CI
 
 on:
     push:
-        branches: [main, project-salsify-initial-implementation]
+        branches: [master, project-salsify-initial-implementation]
     pull_request:
-        branches: [main]
+        branches: [master]
 
 jobs:
     check:
