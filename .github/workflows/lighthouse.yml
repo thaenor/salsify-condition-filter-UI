@@ -25,6 +25,13 @@ jobs:
             - run: rm -rf dist
             - run: npm run build -- --base /salsify-condition-filter-UI/
             - run: cp -r lighthouse-report dist/lighthouse
+            - run: |
+                  echo '<!doctype html><html lang="en"><head><meta charset="UTF-8"><title>Lighthouse Report</title></head><body><h1>Lighthouse Report</h1><ul>' > dist/lighthouse/index.html
+                  for f in dist/lighthouse/*.report.html; do
+                      name=$(basename "$f")
+                      echo "<li><a href=\"$name\">$name</a></li>" >> dist/lighthouse/index.html
+                  done
+                  echo '</ul></body></html>' >> dist/lighthouse/index.html
             - uses: peaceiris/actions-gh-pages@v4
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
