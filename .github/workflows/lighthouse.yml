@@ -18,10 +18,12 @@ jobs:
                   node-version: 22
                   cache: npm
             - run: npm ci
-            - run: npm run build -- --base /salsify-condition-filter-UI/
+            - run: npm run build
             - run: npx vite preview --port 4173 &
             - run: sleep 3
             - run: npx lhci autorun --collect.url=http://localhost:4173
+            - run: rm -rf dist
+            - run: npm run build -- --base /salsify-condition-filter-UI/
             - run: cp -r lighthouse-report dist/lighthouse
             - uses: peaceiris/actions-gh-pages@v4
               with:

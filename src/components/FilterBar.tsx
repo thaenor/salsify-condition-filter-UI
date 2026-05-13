@@ -17,6 +17,7 @@ interface FilterBarProps {
     enumOptions: string[];
     onClear: () => void;
     showClear: boolean;
+    parseError: string | null;
 }
 
 export function FilterBar({
@@ -31,6 +32,7 @@ export function FilterBar({
     enumOptions,
     onClear,
     showClear,
+    parseError,
 }: FilterBarProps) {
     const propertySelectRef = useRef<HTMLSelectElement>(null);
 
@@ -68,6 +70,11 @@ export function FilterBar({
                         options={enumOptions}
                     />
                 </>
+            )}
+            {parseError && (
+                <span role="alert" className="text-destructive text-sm self-center">
+                    {parseError}
+                </span>
             )}
             {showClear && <ClearButton onClear={handleClear} />}
         </div>

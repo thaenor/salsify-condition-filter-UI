@@ -41,13 +41,10 @@ function splitTokens(raw: string): string[] {
 
 function parseFiniteNumber(s: string): ParseResult<number> {
     const trimmed = s.trim();
-    if (trimmed === '') {
-        return { ok: false, error: 'Value cannot be empty' };
+    if (trimmed === '' || !Number.isFinite(Number(trimmed))) {
+        return { ok: false, error: 'Please enter a valid number' };
     }
     const num = Number(trimmed);
-    if (!Number.isFinite(num)) {
-        return { ok: false, error: 'Value must be a finite number' };
-    }
     return { ok: true, value: num };
 }
 

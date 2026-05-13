@@ -25,6 +25,7 @@ export default function App() {
                     enumOptions={controller.selectedProperty?.values ?? []}
                     onClear={controller.clear}
                     showClear={controller.draft.stage !== 'needs-property'}
+                    parseError={controller.parseError}
                 />
                 <ProductTable
                     properties={controller.properties}
