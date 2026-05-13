@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import type { Property, Operator, OperatorId, ValueInputKind } from '../domain/types';
 import { PropertySelect } from './PropertySelect';
 import { OperatorSelect } from './OperatorSelect';
@@ -31,12 +32,24 @@ export function FilterBar({
     onClear,
     showClear,
 }: FilterBarProps) {
+    const propertySelectRef = useRef<HTMLSelectElement>(null);
+
+    const handleClear = () => {
+        onClear();
+        propertySelectRef.current?.focus();
+    };
+
     return (
-        <div className="bg-card border rounded-lg p-4 flex gap-4 items-end">
+        <div
+            className="bg-card border rounded-lg p-4 flex gap-4 items-end"
+            role="search"
+            aria-label="Product filter"
+        >
             <PropertySelect
                 properties={properties}
                 selectedPropertyId={selectedProperty?.id}
                 onSelectProperty={onSelectProperty}
+                selectRef={propertySelectRef}
             />
             {selectedProperty && (
                 <OperatorSelect
@@ -56,7 +69,7 @@ export function FilterBar({
                     />
                 </>
             )}
-            {showClear && <ClearButton onClear={onClear} />}
+            {showClear && <ClearButton onClear={handleClear} />}
         </div>
     );
 }

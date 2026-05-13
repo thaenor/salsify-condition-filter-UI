@@ -18,7 +18,7 @@ export function MultiInput({ onCommit, placeholder }: MultiInputProps) {
                 </label>
                 <TooltipProvider>
                     <Tooltip>
-                        <TooltipTrigger>
+                        <TooltipTrigger aria-label="Comma-separated values">
                             <InfoIcon />
                         </TooltipTrigger>
                         <TooltipContent>Separate values with commas</TooltipContent>

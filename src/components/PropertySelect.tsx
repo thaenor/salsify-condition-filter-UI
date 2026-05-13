@@ -4,12 +4,14 @@ interface PropertySelectProps {
     properties: Property[];
     selectedPropertyId: number | undefined;
     onSelectProperty: (id: number) => void;
+    selectRef?: React.RefObject<HTMLSelectElement | null>;
 }
 
 export function PropertySelect({
     properties,
     selectedPropertyId,
     onSelectProperty,
+    selectRef,
 }: PropertySelectProps) {
     return (
         <div className="flex flex-col gap-1.5">
@@ -17,6 +19,7 @@ export function PropertySelect({
                 Property
             </label>
             <select
+                ref={selectRef}
                 id="property-select"
                 value={selectedPropertyId ?? ''}
                 onChange={(e) => onSelectProperty(Number(e.target.value))}
