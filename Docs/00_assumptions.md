@@ -2,40 +2,33 @@
 
 This is a software engineering exercise focused on code architecture: layered design, separation of concerns, testable domain logic, and reviewable code paths. CSS, design systems, and accessibility are secondary considerations — not because they don't matter in production, but because they're out of scope for this exercise. The real substance is in how the code is organized and tested.
 
-The README also leaves some behaviors unspecified. In a real project, each of these would be settled with a product owner. Here we pick the simplest defensible answer, document the decision, and flag that we made a choice rather than read one.
+The original problem statement also leaves some behaviors unspecified. In a real project, each of these would be settled with a product owner. I've picked the simplest defensible answer and document the decision.
 
-## Summary
+## This is just an exercise, not production ready code
 
-1. **Case-insensitive string comparison** — Both sides lowercased before comparison.
-2. **Whitespace handling** — Trim user input on entry; don't modify stored data.
-3. **Empty inputs and empty strings** — Empty input is not applicable; empty string is a value for "has any value". (See detail below.)
-4. **Number parsing** — Accept finite non-NaN; reject empty, NaN, ±Infinity.
-5. **Number comparison strictness** — Strict: `>` not `>=`, `<` not `<=`.
-6. **Form state resets on selection changes** — Reset operator/value to maintain consistency. (See detail below.)
-7. **Product display order** — Insertion order; no sorting.
-8. **Duplicate property_id** — Rejected as malformed by validator.
-9. **Multi-text input format** — Comma-separated; trim tokens; drop empty tokens.
-10. **Multi-number input format** — Comma-separated; all-or-nothing parsing.
-11. **Datastore freshness** — Read once at init; no reloading.
-12. **Filter persistence** — In-memory only; no page-reload survival.
+For this challenge, I've put some thought into designing a good solution that solves the problem stated, but also leaves some room to grow as if this were an actual project. Some decisions were made thinking "what if in the future we want to add more filters or more categories" (for example). If this were to be a real project done in an enterprise context, there would have been design systems at play, guidelines and frameworks that would have certainly affected the look and feel of the app.
 
-## String comparison: case sensitivity
+## Browser, OS, mobile and tablet compatibility
 
-**Decision.** Case-insensitive. Both sides lowercased before comparison.
+In a real scenario I would have put more time and consideration into testing across multiple browsers as well as tablet and mobile design. I considered these out of the scope of the project.
 
-**Why.** Matches user expectation — "Headphones" and "headphones" should both find the product. Case-sensitive would require UI signals that capitalization matters, which the spec doesn't ask for.
+## User input: whitespace and emptiness
 
-## String comparison: whitespace
+Applies to operators that take a value (`equals`, `contains`, `is any of`, `greater_than`, `less_than`).
 
-**Decision.** Trim user input on entry. Do not modify stored data values.
+**Decisions.**
+1. Trim user input on entry. Stored data is not normalized at compare time.
+2. After trimming, empty input means the filter is not applicable — Apply is disabled.
 
-**Why.** Trimming prevents accidental no-match from a stray trailing space.
+**Why.** Trimming prevents accidental no-match from a stray paste. Leaving stored data untouched means equality compares what's actually there — dirty data surfaces in results rather than getting silently masked. Treating post-trim empty as "not applicable" avoids ambiguity: `Contains ""` would match every product with a string value, and `Is any of []` is indistinguishable from mid-edit.
 
-## Empty inputs and empty strings
+## Presence semantics: `has any value` / `has no value`
 
-**Decision.** For value-matching operators (`equals`, `contains`, `is any of`), empty input means the filter is not applicable — Apply is disabled. For `has any value`, presence is structural: does a `PropertyValue` entry exist in the array? An empty string counts as a value.
+These operators take no input. Selecting the operator immediately readies the filter.
 
-**Why.** `Contains ""` would match every product with a string value; `Is any of []` is indistinguishable from mid-edit. Both are more likely unfinished input than intentional filters. `Has any value` is about field existence, not semantic truthiness — defining "emptiness" per type would require rules the spec doesn't provide.
+**Decision.** Presence is structural: does a `PropertyValue` entry exist in the product's array? An empty string counts as a value (the entry exists).
+
+**Why.** `Has any value` is about field existence, not semantic truthiness. Defining "emptiness" per property type would require rules the spec doesn't provide.
 
 ## Number parsing
 
@@ -65,19 +58,13 @@ The README also leaves some behaviors unspecified. In a real project, each of th
 
 **Decision.** Malformed. Infrastructure validator rejects.
 
-**Why.** "What does Equals match if there are two values?" has no obvious right answer, and the spec is silent. Rejecting at the boundary keeps the domain simple.
+**Why.** The spec doesn't say which value wins when a product has two entries for the same property. Rejecting bad data at the boundary means the domain never has to guess. In a realistic scenario this would have been picked up by our theoretical "data layer".
 
-## Multi-text input format
+## Multi-text/number input format
 
-**Decision.** Comma-separated. Trim tokens. Drop empty tokens. No quoting or escaping.
+**Decision.** Comma-separated. Trim strings. Drop empty strings. No quoting or escaping.
 
-**Why.** Matches the README's example (`Headphones, Keys`). Quoting is needless complication — no value in the demo data contains a comma.
-
-## Multi-number input format
-
-**Decision.** Comma-separated. Each token parsed by the same number parser as single input. Any failing token fails the whole input, with error referencing the offender.
-
-**Why.** Same simplicity argument. All-or-nothing parsing avoids silently dropping data the user intended.
+**Why.** Matches the README's example (`Headphones, Keys`). No value in the demo data contains a comma. Otherwise we would have to plan a logical separator depending on the case. Also applies to numbers since we are treating only whole numbers.
 
 ## Datastore freshness
 

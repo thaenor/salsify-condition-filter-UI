@@ -1,108 +1,96 @@
 # Architecture
 
-The system is organized in four layers with unidirectional dependencies: UI imports from Application; Application imports from Domain and Infrastructure; Domain and Infrastructure do not import from outer layers.
+Four layers with unidirectional dependencies. Each layer only imports from the layers below it.
 
-```
-      ui
-       ↓
-  application
-     ↙   ↘
-  data    domain
-     ↘   ↙
-    domain
+```mermaid
+graph TD
+    UI[UI — components]
+    APP[Application — controller + reducer]
+    DOM[Domain — pure functions]
+    INF[Infrastructure — datastore]
+
+    UI --> APP
+    APP --> DOM
+    APP --> INF
 ```
 
 ## The layers
 
-**Domain.** Pure functions with no I/O or framework dependencies. Implements the operator catalog, compatibility matrix, filter engine, and value-input-kind dispatch. All functions are total functions (valid inputs always produce defined outputs).
+**Domain.** Pure functions with no I/O or framework dependencies. Implements the operator catalog, compatibility matrix, filter engine, and value-input-kind dispatch. All functions are total (valid inputs always produce defined outputs).
 
-Public API:
+Domain methods:
 
-- `applyFilter(products, criteria)` → `Product[]`
-- `validOperatorsFor(property)` → `Operator[]`
-- `valueInputKindFor(property, op)` → `ValueInputKind`
-- `parseRawValue(property, op, raw)` → `ParseResult<CriteriaValue>`
-- `isReady(draft)` → `boolean`
-- `toCriteria(draft)` → `FilterCriteria`
+- `applyFilter(products, criteria)` → `Product[]` — filters products against a `FilterCriteria`
+- `valueInputKindFor(property, operator)` → `ValueInputKind` — tells the UI which input to render
+- `parseRawValue(property, operator, raw)` → `ParseResult<CriteriaValue>` — parses a raw string into a typed criteria value
+- `isReady(draft)` → `boolean` — checks if a draft has enough data to apply
+- `toCriteria(draft)` → `FilterCriteria` — converts a ready draft into filter criteria
+- `COMPATIBILITY` — static map of which operators are valid per property type
 
-**Data**. The bridge between external sources and the application's internal vocabulary. Today it holds a single static datastore; the architecture accommodates additional sources without domain changes. Each source may ship its own naming conventions (snake_case from a Python API, PascalCase from a Ruby service, attributes instead of properties). The data layer maps all of these into the domain's types and terminology. No other layer references external field names or knows that a translation occurred.
+**Infrastructure.** The bridge between external data sources and the application. Today it holds a single static datastore that exports products and properties. In a production setting, this layer would handle API calls, response mapping, and shape validation — translating external naming conventions into the domain's types so no other layer knows a translation occurred.
 
-**Application.** Holds the in-progress filter draft as primary state. Exposes mutation operations: set property, set operator, set value, apply, clear. Computes available operators, value input kind, and filtered products from the draft state. Does not duplicate stored state.
+**Application.** A `useReducer`-based controller that holds the in-progress filter draft as primary state. Exposes mutation operations (`selectProperty`, `selectOperator`, `setValue`, `clear`) and derives everything else — available operators, value input kind, filtered products, parse errors — from the draft. No duplicated state.
 
-**UI.** Renders components from props. Queries the application layer to determine valid operators, required input kind, and filtered products.
+**UI.** Stateless components rendered from props. The only local state lives inside value input components (raw text before commit). The controller drives what renders: which inputs appear, which operators are available, which products are shown. Tailwind and Shadcn take the place of a theoretical design system.
 
 ## Key structures
 
 ### FilterDraft state machine
 
-The in-progress filter is a discriminated union with four states:
+The in-progress filter is a discriminated union with four states. The `stage` field determines which fields are present.
 
-```
-{ stage: 'needs-property' }
-{ stage: 'needs-operator',  property }
-{ stage: 'needs-value',     property, operator }
-{ stage: 'ready',           property, operator, value }
+```mermaid
+stateDiagram-v2
+    [*] --> needs-property
+    needs-property --> needs-operator : selectProperty
+    needs-operator --> needs-value : selectOperator
+    needs-operator --> ready : selectOperator (any/none)
+    needs-value --> ready : setValue (valid)
+    needs-value --> needs-value : setValue (invalid → parseError)
+    ready --> ready : setValue (update)
+
+    needs-operator --> needs-operator : selectProperty (reset)
+    needs-value --> needs-operator : selectProperty (reset)
+    ready --> needs-operator : selectProperty (reset)
+    needs-value --> needs-value : selectOperator (reset value)
+    ready --> needs-value : selectOperator (reset value)
+
+    ready --> needs-property : clear
+    needs-value --> needs-property : clear
+    needs-operator --> needs-property : clear
 ```
 
-The stage field determines which fields are present. Testing if the filter is applyable is `draft.stage === 'ready'`.
+Each user action advances or resets the machine. Changing the property resets to `needs-operator`; changing the operator resets to `needs-value` (or jumps straight to `ready` for valueless operators like `any`/`none`). Clear always returns to the initial state.
 
 ### Value input dispatch
 
-The domain function `valueInputKindFor(property, operator)` returns a kind: `none`, `text`, `number`, `multi-text`, `multi-number`, `enum-single`, or `enum-multi`. The UI has a single `<ValueInput>` component that maps the kind to the corresponding subcomponent.
+`valueInputKindFor(property, operator)` returns one of 7 kinds: `none`, `text`, `number`, `multi-text`, `multi-number`, `enum-single`, `enum-multi`. A single `<ValueInput>` dispatcher component maps the kind to the corresponding subcomponent. The dispatcher is keyed on the selected operator so React remounts the input (and resets local state) when the operator changes.
 
 ### Derived state
 
-Available operators, value input kind, and filtered products are computed from the primary filter-draft state. They are not stored separately.
+Available operators, value input kind, filtered products, and parse errors are all computed from the primary filter draft. They are not stored separately.
 
-### Boundary validation
+### FilterCriteria
 
-The infrastructure layer validates the datastore shape once. The domain layer operates on typed, validated data.
+Discriminated union with `kind: 'none'` (no filter) and `kind: 'single'` (one active filter). Extensible to compound filters via new variants without changing existing switch branches.
 
 ## Folder structure
 
 ```
 src/
-  domain/
-    types.ts
-    operators.ts
-    compatibility.ts
-    valueInput.ts
-    filter.ts
-    __tests__/
-  infrastructure/
-    datastore.ts
-    __tests__/
-  application/
-    filterController.ts
-    __tests__/
-  ui/
-    App.ts
-    components/
-      FilterBar/
-        FilterBar.ts
-        PropertyPicker.ts
-        OperatorPicker.ts
-        ClearButton.ts
-        ValueInput/
-          ValueInput.ts          // dispatcher on kind
-          NoneInput.ts
-          TextInput.ts
-          NumberInput.ts
-          MultiTextInput.ts
-          EnumSingleSelect.ts
-          EnumMultiSelect.ts
-      ProductTable/
-        ProductTable.ts
-        EmptyState.ts
+  domain/           # Pure functions: types, operators, compatibility, filter, valueInput
+  infrastructure/   # Data access: static datastore (would hold API clients in production)
+  application/      # State management: filterReducer + useFilterController hook
+  components/       # React components: FilterBar, ValueInput dispatcher + 6 inputs,
+                    #   PropertySelect, OperatorSelect, ProductTable, ClearButton, layout
+  components/ui/    # shadcn primitives: tooltip, button, icons
 ```
 
-## Implementation details
-
-- **State management.** A single application-layer controller holds filter state. No global state library is used.
-- **Boundary mapping.** The data layer maps external field names and shapes into the domain's types. Validation is hand-rolled. No runtime-typing library is used.
-- **FilterCriteria type.** Discriminated union with `kind: 'none'` and `kind: 'single'`. Extensible to compound filters via new variants without changing existing switch branches.
+Each layer has co-located `__tests__/` directories.
 
 ## Dependencies and frameworks
 
-- Shadcn + Tailwind is "replace" our design system. I will assume design related defaults.
--
+- **React + Vite + TypeScript** — standard SPA toolchain
+- **Tailwind + shadcn (v4, Base UI)** — design system stand-in; provides consistent styling without custom CSS
+- **Vitest** — unit tests, jsdom scoped per component test file (not global, to avoid memory overhead)
+- **Playwright** — E2E tests against the dev server

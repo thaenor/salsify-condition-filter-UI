@@ -9,8 +9,7 @@ stateDiagram-v2
     needs_operator --> needs_value : select operator
     needs_operator --> ready : any / none (no value needed)
     needs_value --> ready : enter valid value
-    ready --> [*] : apply filter
-    ready --> [*] : clear
+    ready --> needs_property : clear
 ```
 
 ```mermaid
@@ -30,7 +29,7 @@ flowchart LR
 ```ts
 interface Product {
     id: number;
-    property_values: PropertyValue[];
+    propertyValues: PropertyValue[];
 }
 ```
 
@@ -171,16 +170,3 @@ Raw user input parsing can fail. The domain returns a tagged result — this is 
 ```ts
 type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string };
 ```
-
-## Public API
-
-```
-applyFilter(products, criteria)    → Product[]
-validOperatorsFor(property)        → Operator[]
-valueInputKindFor(property, op)    → ValueInputKind
-parseRawValue(property, op, raw)   → ParseResult<CriteriaValue>
-isReady(draft)                     → boolean
-toCriteria(draft)                  → FilterCriteria
-```
-
-Anything else the app needs related to the problem's rules is added here, not invented inline in the View or controller.
