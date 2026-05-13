@@ -5,22 +5,27 @@ Baseline a11y pass applied to the filter UI. Not exhaustive — covers the struc
 ## What we did
 
 ### 1. FilterBar landmark (`FilterBar.tsx`)
+
 - Added `role="search"` and `aria-label="Product filter"` to the wrapper div.
 - Screen readers can now jump directly to the filter controls.
 
 ### 2. Live result announcements (`ProductTable.tsx`)
+
 - Visually-hidden `<span>` with `aria-live="polite"` announces product count on every filter change (e.g. "3 products found", "No products match the current filter").
 - Sighted users see the table update; screen reader users hear the count.
 
 ### 3. InfoIcon tooltip label (`MultiInput.tsx`)
+
 - Added `aria-label="Comma-separated values"` to the tooltip trigger button.
 - Without this, the SVG icon was invisible to assistive tech.
 
 ### 4. Focus management on clear (`FilterBar.tsx`, `PropertySelect.tsx`)
+
 - Clicking Clear moves focus back to the property select dropdown.
 - Implemented via a `selectRef` prop — no forwardRef overhead.
 
 ### 5. Empty state status role (`ProductTable.tsx`)
+
 - Added `role="status"` to the "No products to display" cell.
 
 ## What's already good (unchanged)
